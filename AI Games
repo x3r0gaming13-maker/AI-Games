@@ -1,0 +1,1389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GameHub</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#111827;
+  color:#fff
+}
+
+header{
+  background:#1f2937;
+  padding:18px 24px;
+  display:flex;
+  gap:18px;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:2px solid #374151;
+  position:sticky;
+  top:0;
+  z-index:5
+}
+
+header h1{margin:0}
+
+.search{
+  padding:10px 14px;
+  border:0;
+  border-radius:8px;
+  background:#374151;
+  color:#fff;
+  outline:0;
+  width:230px
+}
+
+main{
+  max-width:1100px;
+  margin:auto;
+  padding:28px
+}
+
+.welcome{margin-bottom:24px}
+
+.games{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:18px
+}
+
+.game{
+  background:#1f2937;
+  border:1px solid #374151;
+  border-radius:14px;
+  padding:18px;
+  cursor:pointer
+}
+
+.game:hover{background:#273449}
+
+.icon{
+  height:110px;
+  border-radius:10px;
+  background:#374151;
+  display:grid;
+  place-items:center;
+  font-size:48px;
+  margin-bottom:14px
+}
+
+.game h3{margin:4px 0 7px}
+
+.game p{
+  color:#9ca3af;
+  margin:0 0 14px;
+  font-size:14px
+}
+
+.game button,#back{
+  width:100%;
+  padding:10px;
+  border:0;
+  border-radius:8px;
+  background:#6366f1;
+  color:#fff;
+  font-weight:700;
+  cursor:pointer
+}
+
+.game button:hover,#back:hover{background:#818cf8}
+
+.hidden{display:none!important}
+
+.player{
+  margin-top:24px;
+  background:#1f2937;
+  border:1px solid #374151;
+  border-radius:14px;
+  padding:18px
+}
+
+.topline{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  margin-bottom:12px
+}
+
+.topline h2{margin:0}
+
+.stats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-bottom:10px
+}
+
+.pill{
+  background:#111827;
+  border:1px solid #374151;
+  border-radius:9px;
+  padding:6px 9px;
+  font-size:13px
+}
+
+.help{
+  font-size:13px;
+  color:#9ca3af;
+  margin-top:9px
+}
+
+.status{
+  font-size:14px;
+  color:#d1d5db;
+  margin-top:8px
+}
+
+canvas{
+  display:block;
+  width:100%;
+  height:auto;
+  border:1px solid #374151;
+  border-radius:10px;
+  background:#18251b;
+  touch-action:none;
+  cursor:crosshair
+}
+
+footer{
+  text-align:center;
+  color:#6b7280;
+  padding:28px
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🎮 GameHub</h1>
+  <input class="search" id="search" placeholder="Search games...">
+</header>
+
+<main>
+
+<section id="home">
+
+  <div class="welcome">
+    <h2>Welcome to GameHub!</h2>
+    <p>Pick a game and have some fun.</p>
+  </div>
+
+  <section class="games" id="games">
+
+    <article class="game" data-name="2D Battle Royale">
+      <div class="icon">🪂</div>
+      <h3>2D Battle Royale</h3>
+      <p>Loot, fight bots, and survive the shrinking storm.</p>
+      <button data-open="battle">Play</button>
+    </article>
+
+    <article class="game" data-name="Snake">
+      <div class="icon">🐍</div>
+      <h3>Snake</h3>
+      <p>Classic snake game.</p>
+      <button type="button" disabled>Coming soon</button>
+    </article>
+
+    <article class="game" data-name="Tic Tac Toe">
+      <div class="icon">❌⭕</div>
+      <h3>Tic-Tac-Toe</h3>
+      <p>Classic strategy game.</p>
+      <button type="button" disabled>Coming soon</button>
+    </article>
+
+  </section>
+</section>
+
+
+<section id="battle" class="player hidden">
+
+  <div class="topline">
+    <h2>🪂 2D Battle Royale</h2>
+    <button id="back" style="width:auto">
+      ← Back to games
+    </button>
+  </div>
+
+  <div class="stats">
+    <span class="pill">
+      ❤️ HP: <b id="hp">100</b>
+    </span>
+
+    <span class="pill">
+      🔫 Ammo: <b id="ammo">30</b>
+    </span>
+
+    <span class="pill">
+      👾 Enemies: <b id="enemies">12</b>
+    </span>
+
+    <span class="pill">
+      🏆 Eliminations: <b id="kills">0</b>
+    </span>
+
+    <span class="pill">
+      🌪️ Storm: <b id="storm">100%</b>
+    </span>
+  </div>
+
+  <canvas id="game" width="736" height="480"></canvas>
+
+  <div class="help">
+    <b>WASD / Arrow Keys</b> = move •
+    <b>Mouse</b> = aim •
+    <b>Click</b> = shoot •
+    <b>R</b> = reload
+  </div>
+
+  <div class="status" id="status">
+    Drop in! Find loot and survive the storm.
+  </div>
+
+  <button id="restart" style="margin-top:10px;width:auto">
+    Restart
+  </button>
+
+</section>
+
+</main>
+
+<footer>
+  GameHub • Original game content
+</footer>
+
+
+<script>
+
+const home=document.getElementById('home');
+const battle=document.getElementById('battle');
+
+document.querySelector('[data-open="battle"]').onclick=()=>{
+  home.classList.add('hidden');
+  battle.classList.remove('hidden');
+  reset();
+};
+
+document.getElementById('back').onclick=()=>{
+  battle.classList.add('hidden');
+  home.classList.remove('hidden');
+};
+
+
+document.getElementById('search').oninput=e=>{
+  const q=e.target.value.toLowerCase();
+
+  document.querySelectorAll('.game').forEach(g=>{
+    g.style.display=
+      g.dataset.name.toLowerCase().includes(q)
+      ? ''
+      : 'none';
+  });
+};
+
+
+const c=document.getElementById('game');
+const ctx=c.getContext('2d');
+
+const W=c.width;
+const H=c.height;
+
+const hpEl=document.getElementById('hp');
+const ammoEl=document.getElementById('ammo');
+const enEl=document.getElementById('enemies');
+const killsEl=document.getElementById('kills');
+const stormEl=document.getElementById('storm');
+const status=document.getElementById('status');
+
+
+let keys=new Set();
+
+let mouse={
+  x:W/2,
+  y:H/2,
+  down:false
+};
+
+let player;
+let bots;
+let bullets;
+let loot;
+let particles;
+
+let kills;
+let ammo;
+
+let stormRadius;
+let stormTimer;
+let fireCooldown;
+
+let gameOver;
+let last=0;
+
+
+const rand=(a,b)=>
+  Math.random()*(b-a)+a;
+
+
+const dist=(a,b)=>
+  Math.hypot(a.x-b.x,a.y-b.y);
+
+
+function reset(){
+
+  player={
+    x:W/2,
+    y:H/2,
+    r:13,
+    hp:100,
+    speed:190,
+    angle:0
+  };
+
+  bots=[];
+  bullets=[];
+  loot=[];
+  particles=[];
+
+  kills=0;
+  ammo=30;
+
+  stormRadius=215;
+  stormTimer=0;
+  fireCooldown=0;
+
+  gameOver=false;
+
+  status.textContent=
+    'Drop in! Find loot and survive the storm.';
+
+
+  for(let i=0;i<12;i++){
+
+    let x,y;
+
+    do{
+
+      x=rand(35,W-35);
+      y=rand(35,H-35);
+
+    }while(
+      Math.hypot(
+        x-W/2,
+        y-H/2
+      )<100
+    );
+
+
+    bots.push({
+      x,
+      y,
+      r:11,
+      hp:50,
+      speed:rand(35,65),
+      cool:rand(.2,1.5),
+      angle:0
+    });
+
+  }
+
+
+  for(let i=0;i<9;i++){
+
+    loot.push({
+      x:rand(30,W-30),
+      y:rand(30,H-30),
+      type:
+        Math.random()<.55
+        ? 'ammo'
+        : 'med'
+    });
+
+  }
+
+  updateHud();
+}
+
+
+function updateHud(){
+
+  hpEl.textContent=
+    Math.max(0,Math.ceil(player.hp));
+
+  ammoEl.textContent=ammo;
+
+  enEl.textContent=bots.length;
+
+  killsEl.textContent=kills;
+
+  stormEl.textContent=
+    Math.max(
+      0,
+      Math.round(stormRadius/215*100)
+    )+'%';
+
+}
+
+
+function shoot(owner,x,y){
+
+  if(owner==='player' && ammo<=0)
+    return;
+
+  if(owner==='player')
+    ammo--;
+
+
+  const src=
+    owner==='player'
+    ? player
+    : {x,y};
+
+
+  const a=
+    owner==='player'
+    ? player.angle
+    : Math.atan2(
+        player.y-y,
+        player.x-x
+      );
+
+
+  bullets.push({
+
+    x:src.x+Math.cos(a)*15,
+
+    y:src.y+Math.sin(a)*15,
+
+    vx:Math.cos(a)*500,
+
+    vy:Math.sin(a)*500,
+
+    life:1.1,
+
+    owner,
+
+    dmg:
+      owner==='player'
+      ? 25
+      : 10
+
+  });
+
+}
+
+
+function explode(x,y){
+
+  for(let i=0;i<8;i++){
+
+    particles.push({
+
+      x,
+      y,
+
+      vx:rand(-80,80),
+
+      vy:rand(-80,80),
+
+      life:.35
+
+    });
+
+  }
+
+}
+
+
+function update(dt){
+
+  if(
+    battle.classList.contains('hidden')
+    || gameOver
+  )
+    return;
+
+
+  stormTimer+=dt;
+
+  fireCooldown=
+    Math.max(
+      0,
+      fireCooldown-dt
+    );
+
+
+  if(stormTimer>12){
+
+    stormRadius=
+      Math.max(
+        70,
+        stormRadius-dt*2.5
+      );
+
+  }
+
+
+  let dx=0;
+  let dy=0;
+
+
+  // Correct WASD movement
+
+  if(
+    keys.has('w')
+    || keys.has('arrowup')
+  )
+    dy--;
+
+
+  if(
+    keys.has('s')
+    || keys.has('arrowdown')
+  )
+    dy++;
+
+
+  if(
+    keys.has('a')
+    || keys.has('arrowleft')
+  )
+    dx--;
+
+
+  if(
+    keys.has('d')
+    || keys.has('arrowright')
+  )
+    dx++;
+
+
+  const m=
+    Math.hypot(dx,dy)||1;
+
+
+  player.x+=
+    dx/m*
+    player.speed*
+    dt;
+
+
+  player.y+=
+    dy/m*
+    player.speed*
+    dt;
+
+
+  player.x=
+    Math.max(
+      15,
+      Math.min(W-15,player.x)
+    );
+
+
+  player.y=
+    Math.max(
+      15,
+      Math.min(H-15,player.y)
+    );
+
+
+  player.angle=
+    Math.atan2(
+      mouse.y-player.y,
+      mouse.x-player.x
+    );
+
+
+  if(
+    mouse.down
+    && fireCooldown<=0
+  ){
+
+    shoot('player');
+
+    fireCooldown=.13;
+
+  }
+
+
+  // Storm damage
+
+  if(
+    Math.hypot(
+      player.x-W/2,
+      player.y-H/2
+    )>stormRadius
+  ){
+
+    player.hp-=dt*5;
+
+  }
+
+
+  // Bots
+
+  for(const b of bots){
+
+    b.cool-=dt;
+
+
+    const a=
+      Math.atan2(
+        player.y-b.y,
+        player.x-b.x
+      );
+
+
+    b.angle=a;
+
+
+    const d=
+      dist(b,player);
+
+
+    if(d>145){
+
+      b.x+=
+        Math.cos(a)*
+        b.speed*
+        dt;
+
+      b.y+=
+        Math.sin(a)*
+        b.speed*
+        dt;
+
+    }
+
+
+    if(
+      d<270
+      && b.cool<=0
+    ){
+
+      shoot(
+        'bot',
+        b.x,
+        b.y
+      );
+
+      b.cool=
+        rand(.9,1.8);
+
+    }
+
+
+    if(
+      Math.hypot(
+        b.x-W/2,
+        b.y-H/2
+      )>stormRadius
+    ){
+
+      b.hp-=dt*4;
+
+    }
+
+  }
+
+
+  // Bullets
+
+  for(
+    let i=bullets.length-1;
+    i>=0;
+    i--
+  ){
+
+    const b=bullets[i];
+
+    b.x+=b.vx*dt;
+    b.y+=b.vy*dt;
+
+    b.life-=dt;
+
+
+    if(
+      b.life<=0
+      || b.x<0
+      || b.x>W
+      || b.y<0
+      || b.y>H
+    ){
+
+      bullets.splice(i,1);
+
+      continue;
+
+    }
+
+
+    // Player bullets hit bots
+
+    if(b.owner==='player'){
+
+      for(
+        let j=bots.length-1;
+        j>=0;
+        j--
+      ){
+
+        if(
+          dist(b,bots[j])
+          <
+          bots[j].r+4
+        ){
+
+          bots[j].hp-=b.dmg;
+
+          explode(b.x,b.y);
+
+          bullets.splice(i,1);
+
+
+          if(bots[j].hp<=0){
+
+            loot.push({
+
+              x:bots[j].x,
+
+              y:bots[j].y,
+
+              type:
+                Math.random()<.5
+                ? 'ammo'
+                : 'med'
+
+            });
+
+
+            bots.splice(j,1);
+
+            kills++;
+
+          }
+
+          break;
+
+        }
+
+      }
+
+    }
+
+
+    // Bot bullets hit player
+
+    else if(
+      dist(b,player)
+      <
+      player.r+4
+    ){
+
+      player.hp-=b.dmg;
+
+      explode(b.x,b.y);
+
+      bullets.splice(i,1);
+
+    }
+
+  }
+
+
+  // Loot
+
+  for(
+    let i=loot.length-1;
+    i>=0;
+    i--
+  ){
+
+    if(
+      dist(player,loot[i])<24
+    ){
+
+      if(loot[i].type==='ammo'){
+
+        ammo=
+          Math.min(
+            60,
+            ammo+12
+          );
+
+      }
+
+      else{
+
+        player.hp=
+          Math.min(
+            100,
+            player.hp+25
+          );
+
+      }
+
+      loot.splice(i,1);
+
+    }
+
+  }
+
+
+  // Particles
+
+  for(
+    let i=particles.length-1;
+    i>=0;
+    i--
+  ){
+
+    const p=particles[i];
+
+    p.x+=p.vx*dt;
+    p.y+=p.vy*dt;
+
+    p.life-=dt;
+
+
+    if(p.life<=0)
+      particles.splice(i,1);
+
+  }
+
+
+  // Game over
+
+  if(player.hp<=0){
+
+    gameOver=true;
+
+    status.textContent=
+      '💀 You were eliminated. Press Restart to drop again.';
+
+  }
+
+  else if(!bots.length){
+
+    gameOver=true;
+
+    status.textContent=
+      '🏆 Victory! You cleared the island.';
+
+  }
+
+
+  updateHud();
+
+}
+
+
+function draw(){
+
+  ctx.clearRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+
+  // Ground
+
+  ctx.fillStyle='#315b35';
+
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+
+  // Grid
+
+  ctx.strokeStyle=
+    'rgba(255,255,255,.06)';
+
+
+  for(
+    let x=0;
+    x<W;
+    x+=32
+  ){
+
+    ctx.beginPath();
+
+    ctx.moveTo(x,0);
+
+    ctx.lineTo(x,H);
+
+    ctx.stroke();
+
+  }
+
+
+  for(
+    let y=0;
+    y<H;
+    y+=32
+  ){
+
+    ctx.beginPath();
+
+    ctx.moveTo(0,y);
+
+    ctx.lineTo(W,y);
+
+    ctx.stroke();
+
+  }
+
+
+  // Storm
+
+  ctx.save();
+
+  ctx.fillStyle=
+    'rgba(90,40,120,.28)';
+
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+
+  ctx.globalCompositeOperation=
+    'destination-out';
+
+
+  ctx.beginPath();
+
+  ctx.arc(
+    W/2,
+    H/2,
+    stormRadius,
+    0,
+    Math.PI*2
+  );
+
+  ctx.fill();
+
+  ctx.restore();
+
+
+  ctx.strokeStyle=
+    'rgba(210,120,255,.9)';
+
+  ctx.lineWidth=4;
+
+  ctx.beginPath();
+
+  ctx.arc(
+    W/2,
+    H/2,
+    stormRadius,
+    0,
+    Math.PI*2
+  );
+
+  ctx.stroke();
+
+
+  // Loot
+
+  for(const l of loot){
+
+    ctx.fillStyle=
+      l.type==='ammo'
+      ? '#f5c542'
+      : '#43d17a';
+
+
+    ctx.fillRect(
+      l.x-7,
+      l.y-7,
+      14,
+      14
+    );
+
+
+    ctx.fillStyle='#111';
+
+    ctx.font='10px sans-serif';
+
+    ctx.textAlign='center';
+
+    ctx.fillText(
+      l.type==='ammo'
+      ? 'A'
+      : '+',
+      l.x,
+      l.y+4
+    );
+
+  }
+
+
+  // Bots
+
+  for(const b of bots){
+
+    ctx.save();
+
+    ctx.translate(
+      b.x,
+      b.y
+    );
+
+    ctx.rotate(b.angle);
+
+
+    ctx.fillStyle='#d85b5b';
+
+    ctx.beginPath();
+
+    ctx.arc(
+      0,
+      0,
+      b.r,
+      0,
+      Math.PI*2
+    );
+
+    ctx.fill();
+
+
+    ctx.fillStyle='#222';
+
+    ctx.fillRect(
+      5,
+      -3,
+      14,
+      6
+    );
+
+
+    ctx.restore();
+
+
+    // Bot health
+
+    ctx.fillStyle='#222';
+
+    ctx.fillRect(
+      b.x-12,
+      b.y-17,
+      24,
+      3
+    );
+
+
+    ctx.fillStyle='#6ee16e';
+
+    ctx.fillRect(
+      b.x-12,
+      b.y-17,
+      24*
+      Math.max(
+        0,
+        b.hp/50
+      ),
+      3
+    );
+
+  }
+
+
+  // Bullets
+
+  for(const b of bullets){
+
+    ctx.fillStyle=
+      b.owner==='player'
+      ? '#ffe36b'
+      : '#ff8b8b';
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+      b.x,
+      b.y,
+      3,
+      0,
+      Math.PI*2
+    );
+
+    ctx.fill();
+
+  }
+
+
+  // Player
+
+  ctx.save();
+
+  ctx.translate(
+    player.x,
+    player.y
+  );
+
+  ctx.rotate(player.angle);
+
+
+  ctx.fillStyle='#4d8cff';
+
+  ctx.beginPath();
+
+  ctx.arc(
+    0,
+    0,
+    player.r,
+    0,
+    Math.PI*2
+  );
+
+  ctx.fill();
+
+
+  ctx.fillStyle='#202b44';
+
+  ctx.fillRect(
+    7,
+    -4,
+    18,
+    8
+  );
+
+
+  ctx.restore();
+
+
+  // Particles
+
+  for(const p of particles){
+
+    ctx.globalAlpha=
+      Math.max(
+        0,
+        p.life/.35
+      );
+
+    ctx.fillStyle='#ffd36b';
+
+    ctx.beginPath();
+
+    ctx.arc(
+      p.x,
+      p.y,
+      3,
+      0,
+      Math.PI*2
+    );
+
+    ctx.fill();
+
+    ctx.globalAlpha=1;
+
+  }
+
+
+  // Game over screen
+
+  if(gameOver){
+
+    ctx.fillStyle=
+      'rgba(0,0,0,.6)';
+
+    ctx.fillRect(
+      0,
+      0,
+      W,
+      H
+    );
+
+
+    ctx.fillStyle='#fff';
+
+    ctx.textAlign='center';
+
+    ctx.font=
+      'bold 32px system-ui';
+
+
+    ctx.fillText(
+      !bots.length
+      ? 'VICTORY'
+      : 'ELIMINATED',
+      W/2,
+      H/2
+    );
+
+
+    ctx.font=
+      '16px system-ui';
+
+
+    ctx.fillText(
+      'Press Restart to play again',
+      W/2,
+      H/2+32
+    );
+
+  }
+
+}
+
+
+// Keyboard controls
+
+window.addEventListener(
+  'keydown',
+  e=>{
+
+    const k=
+      e.key.toLowerCase();
+
+
+    if([
+      'w',
+      'a',
+      's',
+      'd',
+      'arrowup',
+      'arrowdown',
+      'arrowleft',
+      'arrowright',
+      'r'
+    ].includes(k)){
+
+      e.preventDefault();
+
+    }
+
+
+    keys.add(k);
+
+
+    if(
+      k==='r'
+      && ammo<30
+    ){
+
+      ammo=30;
+
+    }
+
+  }
+);
+
+
+window.addEventListener(
+  'keyup',
+  e=>{
+    keys.delete(
+      e.key.toLowerCase()
+    );
+  }
+);
+
+
+// Mouse controls
+
+c.addEventListener(
+  'pointermove',
+  e=>{
+
+    const r=
+      c.getBoundingClientRect();
+
+
+    mouse.x=
+      (e.clientX-r.left)
+      *W/r.width;
+
+
+    mouse.y=
+      (e.clientY-r.top)
+      *H/r.height;
+
+  }
+);
+
+
+c.addEventListener(
+  'pointerdown',
+  e=>{
+
+    mouse.down=true;
+
+    c.setPointerCapture(
+      e.pointerId
+    );
+
+  }
+);
+
+
+c.addEventListener(
+  'pointerup',
+  ()=>{
+    mouse.down=false;
+  }
+);
+
+
+c.addEventListener(
+  'pointercancel',
+  ()=>{
+    mouse.down=false;
+  }
+);
+
+
+document.getElementById(
+  'restart'
+).onclick=reset;
+
+
+// Game loop
+
+function loop(t){
+
+  const dt=
+    Math.min(
+      .033,
+      (t-last)/1000||0
+    );
+
+  last=t;
+
+  update(dt);
+
+  draw();
+
+  requestAnimationFrame(loop);
+
+}
+
+
+reset();
+
+requestAnimationFrame(loop);
+
+</script>
+
+</body>
+</html>
