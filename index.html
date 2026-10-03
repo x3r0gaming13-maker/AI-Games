@@ -2117,12 +2117,13 @@ requestAnimationFrame(loop);
 
 </script>
 <script>
-/* Soulbound: Pixel Quest — original pixel RPG */
+/* Soulbound: Pixel Quest — expanded animated pixel RPG */
 (()=>{
 const sec=document.getElementById('soulbound'),cv=document.getElementById('soulCanvas'),x=cv.getContext('2d');
-x.imageSmoothingEnabled=false;x.scale(cv.width/720,cv.height/500);
+x.imageSmoothingEnabled=false;x.scale(cv.width/560,cv.height/390);
 const hpE=document.getElementById('soulHP'),lvE=document.getElementById('soulLV'),exE=document.getElementById('soulEXP'),enE=document.getElementById('soulEnemy'),st=document.getElementById('soulStatus');
-let keys=new Set(),mode='world',enemy=null,heart={x:360,y:385},player={x:360,y:330},hp=20,lv=1,exp=0,inv=0,shots=[],last=0,worldT=0,dodgeT=0,attackT=0;
+let keys=new Set(),mode='world',enemy=null,heart={x:280,y:330},player={x:280,y:300},hp=20,lv=1,exp=0,inv=0,shots=[],last=0,worldT=0,dodgeT=0,animT=0,camera={x:0,y:0},encounterCooldown=0;
+const MAPW=1800,MAPH=1200;
 const enemies=[
 {name:'Moss Mite',hp:18,max:18,atk:1,color:'#4ade80',text:'It wiggles politely.'},
 {name:'Clockling',hp:24,max:24,atk:2,color:'#facc15',text:'It ticks nervously.'},
@@ -2132,11 +2133,11 @@ const enemies=[
 ];
 const boss={name:'THE PIXEL WARDEN',hp:90,max:90,atk:5,color:'#fb7185',text:'The Warden blocks the path forward.'};
 function rnd(a,b){return Math.random()*(b-a)+a}
-function resetWorld(){mode='world';enemy=null;player={x:360,y:330};hp=20;lv=1;exp=0;shots=[];inv=0;worldT=0;dodgeT=0;attackT=0;updateHud();st.textContent='Explore the little pixel world. Walk into an enemy to battle.'}
+function resetWorld(){mode='world';enemy=null;player={x:280,y:980};hp=20;lv=1;exp=0;shots=[];inv=0;worldT=0;animT=0;camera={x:0,y:0};encounterCooldown=2;updateHud();st.textContent='Explore the Pixel Quest. Find the Warden in the northern fortress.'}
 function updateHud(){hpE.textContent=Math.max(0,hp);lvE.textContent=lv;exE.textContent=exp;enE.textContent=enemy?enemy.name:'—'}
-function startBattle(e){enemy={...e};mode='battle';heart={x:360,y:385};shots=[];st.textContent=enemy.name+' appears! Choose an action.';updateHud()}
-function startBoss(){startBattle(boss);st.textContent='The PIXEL WARDEN challenges you!';}
-function endBattle(){mode='world';enemy=null;shots=[];heart={x:360,y:385};updateHud()}
+function startBattle(e){enemy={...e};mode='battle';heart={x:280,y:330};shots=[];st.textContent=enemy.name+' appears! Choose an action.';updateHud()}
+function startBoss(){startBattle(boss);st.textContent='The PIXEL WARDEN awakens!';}
+function endBattle(){mode='world';enemy=null;shots=[];heart={x:280,y:330};encounterCooldown=1.5;updateHud()}
 function damageEnemy(n){
  enemy.hp-=n;
  if(enemy.hp<=0){
@@ -2149,28 +2150,16 @@ function damageEnemy(n){
 }
 function spawnShot(o){shots.push(o)}
 function enemyTurn(){
- mode='dodge';dodgeT=3.5;attackT=0;shots=[];
+ mode='dodge';dodgeT=3.5;shots=[];
  const isBoss=enemy.name==='THE PIXEL WARDEN',phase=isBoss?(enemy.hp<=30?3:enemy.hp<=60?2:1):0;
- if(!isBoss){
-  for(let i=0;i<7;i++)spawnShot({x:rnd(170,550),y:rnd(210,285),vx:rnd(-55,55),vy:rnd(45,90),r:5,type:'square'});
- }else if(phase===1){
-  for(let i=0;i<12;i++)spawnShot({x:rnd(145,575),y:rnd(205,275),vx:rnd(-35,35),vy:rnd(55,105),r:5,type:'square'});
-  st.textContent='Warden Pattern 1: falling pixels!';
- }else if(phase===2){
-  for(let i=0;i<8;i++){const side=i%2?560:160;spawnShot({x:side,y:rnd(345,445),vx:i%2?-rnd(70,125):rnd(70,125),vy:rnd(-35,35),r:6,type:'orb'});}
-  for(let i=0;i<5;i++)spawnShot({x:rnd(180,540),y:205,vx:rnd(-35,35),vy:rnd(70,120),r:5,type:'square'});
-  st.textContent='Warden Pattern 2: crossfire!';
- }else{
-  for(let i=0;i<10;i++){const a=(Math.PI*2*i/10)+rnd(-.12,.12);spawnShot({x:360+Math.cos(a)*18,y:270+Math.sin(a)*18,vx:Math.cos(a)*rnd(75,125),vy:Math.sin(a)*rnd(75,125),r:6,type:'orb'});}
-  for(let i=0;i<6;i++)spawnShot({x:rnd(160,560),y:215,vx:rnd(-80,80),vy:rnd(80,130),r:4,type:'square'});
-  st.textContent='Warden Pattern 3: soul burst!';
- }
+ if(!isBoss){for(let i=0;i<7;i++)spawnShot({x:rnd(90,470),y:rnd(155,225),vx:rnd(-45,45),vy:rnd(45,90),r:5,type:'square'})}
+ else if(phase===1){for(let i=0;i<12;i++)spawnShot({x:rnd(75,485),y:rnd(150,220),vx:rnd(-35,35),vy:rnd(55,105),r:5,type:'square'});st.textContent='Warden Pattern 1: falling pixels!'}
+ else if(phase===2){for(let i=0;i<8;i++){const side=i%2?465:95;spawnShot({x:side,y:rnd(285,355),vx:i%2?-rnd(70,125):rnd(70,125),vy:rnd(-35,35),r:6,type:'orb'})}for(let i=0;i<5;i++)spawnShot({x:rnd(110,450),y:150,vx:rnd(-35,35),vy:rnd(70,120),r:5,type:'square'});st.textContent='Warden Pattern 2: crossfire!'}
+ else{for(let i=0;i<10;i++){const a=Math.PI*2*i/10+rnd(-.12,.12);spawnShot({x:280+Math.cos(a)*18,y:205+Math.sin(a)*18,vx:Math.cos(a)*rnd(75,125),vy:Math.sin(a)*rnd(75,125),r:6,type:'orb'})}for(let i=0;i<6;i++)spawnShot({x:rnd(90,470),y:150,vx:rnd(-80,80),vy:rnd(80,130),r:4,type:'square'});st.textContent='Warden Pattern 3: soul burst!'}
 }
 function act(a){
- if(mode==='victory'){endBattle();return}
- if(mode==='win')return;
- if(mode!=='battle')return;
- if(a==='fight'){damageEnemy(6+lv*2)}
+ if(mode==='victory'){endBattle();return}if(mode==='win')return;if(mode!=='battle')return;
+ if(a==='fight')damageEnemy(6+lv*2);
  if(a==='act'){st.textContent=enemy.text+' It seems slightly less hostile.';enemy.atk=Math.max(1,enemy.atk-1);enemyTurn()}
  if(a==='item'){if(hp<20){hp=Math.min(20,hp+8);st.textContent='You used a Pixel Snack. HP restored!';enemyTurn()}else st.textContent='Your HP is already full!'}
  if(a==='mercy'){if(enemy.name!=='THE PIXEL WARDEN'&&Math.random()<.65){st.textContent=enemy.name+' accepts your mercy!';mode='victory'}else{st.textContent='It is not ready to spare you.';enemyTurn()}}
@@ -2181,64 +2170,86 @@ document.getElementById('soulBack').onclick=()=>{sec.classList.add('hidden');hom
 document.querySelector('[data-open="soulbound"]').onclick=()=>{home.classList.add('hidden');sec.classList.remove('hidden');resetWorld()};
 window.addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(sec.classList.contains('hidden'))return;if(e.key==='Enter'&&mode==='battle')act('fight')});
 window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+
+function zoneName(px,py){
+ if(py<300)return 'Warden Fortress';
+ if(px>1200&&py<760)return 'Clockwork Ruins';
+ if(px<650&&py<650)return 'Mosswood';
+ if(px>650&&px<1250&&py>650)return 'Crystal Caverns';
+ return 'Meadow Crossing';
+}
 function update(dt){
  if(sec.classList.contains('hidden'))return;
+ animT+=dt;
  if(mode==='world'){
   let dx=(keys.has('d')||keys.has('arrowright'))-(keys.has('a')||keys.has('arrowleft')),dy=(keys.has('s')||keys.has('arrowdown'))-(keys.has('w')||keys.has('arrowup')),m=Math.hypot(dx,dy)||1;
-  player.x+=dx/m*120*dt;player.y+=dy/m*120*dt;
-  player.x=Math.max(55,Math.min(665,player.x));player.y=Math.max(105,Math.min(430,player.y));worldT+=dt;
-  if(player.x>590&&player.y<160){startBoss();return}
-  if(Math.random()<dt*.002){const e=enemies[Math.floor(Math.random()*enemies.length)];startBattle(e)}
+  if(dx||dy){player.x+=dx/m*145*dt;player.y+=dy/m*145*dt}
+  player.x=Math.max(35,Math.min(MAPW-35,player.x));player.y=Math.max(35,Math.min(MAPH-35,player.y));
+  encounterCooldown=Math.max(0,encounterCooldown-dt);
+  camera.x=Math.max(0,Math.min(MAPW-560,player.x-280));camera.y=Math.max(0,Math.min(MAPH-390,player.y-195));
+  if(player.x>1350&&player.y<300){startBoss();return}
+  if(encounterCooldown<=0&&Math.random()<dt*.035){const e=enemies[Math.floor(Math.random()*enemies.length)];startBattle(e);return}
  }
  if(mode==='dodge'){
   dodgeT-=dt;
-  if(dodgeT<=0){mode='battle';shots=[];heart={x:360,y:385};st.textContent=enemy.name+' finished attacking. Choose an action!';return}
+  if(dodgeT<=0){mode='battle';shots=[];heart={x:280,y:330};st.textContent=enemy.name+' finished attacking. Choose an action!';return}
   let dx=(keys.has('d')||keys.has('arrowright'))-(keys.has('a')||keys.has('arrowleft')),dy=(keys.has('s')||keys.has('arrowdown'))-(keys.has('w')||keys.has('arrowup')),m=Math.hypot(dx,dy)||1;
-  heart.x+=dx/m*190*dt;heart.y+=dy/m*190*dt;heart.x=Math.max(150,Math.min(570,heart.x));heart.y=Math.max(335,Math.min(455,heart.y));
-  inv=Math.max(0,inv-dt);
+  if(dx||dy){heart.x+=dx/m*190*dt;heart.y+=dy/m*190*dt}
+  heart.x=Math.max(85,Math.min(475,heart.x));heart.y=Math.max(275,Math.min(370,heart.y));inv=Math.max(0,inv-dt);
   for(const s of shots){s.x+=s.vx*dt;s.y+=s.vy*dt;if(inv<=0&&Math.hypot(s.x-heart.x,s.y-heart.y)<s.r+6){hp-=enemy.atk;inv=.65;updateHud();if(hp<=0){mode='gameover';st.textContent='💥 Your soul was scattered. Press Back and try again.'}else st.textContent='Ouch! Dodge the rest!'}}
  }
 }
 function rect(px,py,w,h,c){x.fillStyle=c;x.fillRect(Math.round(px),Math.round(py),w,h)}
-function spriteMite(cx,cy){rect(cx-16,cy-10,32,20,'#166534');rect(cx-12,cy-14,24,22,'#4ade80');rect(cx-7,cy-9,5,5,'#07110a');rect(cx+2,cy-9,5,5,'#07110a');rect(cx-8,cy+5,5,9,'#22c55e');rect(cx+4,cy+5,5,9,'#22c55e');rect(cx-22,cy-4,6,5,'#86efac');rect(cx+16,cy-4,6,5,'#86efac')}
-function spriteClock(cx,cy){rect(cx-17,cy-17,34,34,'#854d0e');rect(cx-14,cy-14,28,28,'#fde047');rect(cx-9,cy-9,18,18,'#fef9c3');rect(cx-2,cy-7,4,9,'#713f12');rect(cx,cy,8,4,'#713f12');rect(cx-4,cy-19,8,4,'#fef08a');rect(cx-4,cy+15,8,4,'#fef08a')}
-function spriteBat(cx,cy){rect(cx-7,cy-9,14,25,'#6d28d9');rect(cx-25,cy-2,18,14,'#a78bfa');rect(cx+7,cy-2,18,14,'#a78bfa');rect(cx-14,cy+4,8,9,'#7c3aed');rect(cx+6,cy+4,8,9,'#7c3aed');rect(cx-4,cy-5,3,4,'#fff');rect(cx+3,cy-5,3,4,'#fff')}
-function spriteRock(cx,cy){rect(cx-18,cy-13,36,27,'#475569');rect(cx-13,cy-18,22,8,'#64748b');rect(cx-11,cy-7,6,6,'#111827');rect(cx+6,cy-7,6,6,'#111827');rect(cx-6,cy+5,12,4,'#1e293b');rect(cx-21,cy+2,6,8,'#94a3b8');rect(cx+15,cy+2,6,8,'#94a3b8')}
-function spriteSlime(cx,cy){rect(cx-18,cy-8,36,20,'#0369a1');rect(cx-13,cy-14,26,7,'#38bdf8');rect(cx-9,cy-4,6,5,'#082f49');rect(cx+4,cy-4,6,5,'#082f49');rect(cx-4,cy+6,9,4,'#075985');rect(cx-13,cy+12,7,5,'#22d3ee');rect(cx+6,cy+12,7,5,'#22d3ee')}
-function spriteWarden(cx,cy){
- const glow=enemy&&enemy.hp<=30?'#fef08a':'#fb7185';
- rect(cx-30,cy-28,60,56,'#3b0b20');rect(cx-24,cy-34,48,6,'#7f1d1d');rect(cx-35,cy-18,8,28,'#be123c');rect(cx+27,cy-18,8,28,'#be123c');
- rect(cx-23,cy-20,46,38,'#9f1239');rect(cx-15,cy-11,10,9,glow);rect(cx+5,cy-11,10,9,glow);rect(cx-10,cy+7,20,5,'#500724');
- rect(cx-18,cy+18,9,12,'#e11d48');rect(cx+9,cy+18,9,12,'#e11d48');rect(cx-40,cy-3,10,6,'#fb7185');rect(cx+30,cy-3,10,6,'#fb7185');
+function spriteMite(cx,cy,a=0){const bob=Math.round(Math.sin(a*7)*2);cy+=bob;const step=Math.sin(a*10)>0?2:-2;rect(cx-16,cy-10,32,20,'#166534');rect(cx-12,cy-14,24,22,'#4ade80');rect(cx-7,cy-9,5,5,'#07110a');rect(cx+2,cy-9,5,5,'#07110a');rect(cx-8,cy+5,5,9+step,'#22c55e');rect(cx+4,cy+5,5,9-step,'#22c55e')}
+function spriteClock(cx,cy,a=0){const bob=Math.round(Math.sin(a*5)*2);cy+=bob;rect(cx-17,cy-17,34,34,'#854d0e');rect(cx-14,cy-14,28,28,'#fde047');rect(cx-9,cy-9,18,18,'#fef9c3');const q=Math.floor((a*2)%4);if(q<2){rect(cx-2,cy-7,4,9,'#713f12');rect(cx,cy,8,4,'#713f12')}else{rect(cx-7,cy-2,9,4,'#713f12');rect(cx,cy-2,4,8,'#713f12')}}
+function spriteBat(cx,cy,a=0){const flap=Math.round(Math.sin(a*12)*5);cy+=Math.round(Math.sin(a*6)*3);rect(cx-7,cy-9,14,25,'#6d28d9');rect(cx-25,cy-2-flap,18,14,'#a78bfa');rect(cx+7,cy-2+flap,18,14,'#a78bfa');rect(cx-4,cy-5,3,4,'#fff');rect(cx+3,cy-5,3,4,'#fff')}
+function spriteRock(cx,cy,a=0){const bob=Math.round(Math.sin(a*3)*1);cy+=bob;rect(cx-18,cy-13,36,27,'#475569');rect(cx-13,cy-18,22,8,'#64748b');rect(cx-11,cy-7,6,6,'#111827');rect(cx+6,cy-7,6,6,'#111827');rect(cx-6,cy+5,12,4,'#1e293b');rect(cx-21,cy+2,6,8,'#94a3b8');rect(cx+15,cy+2,6,8,'#94a3b8')}
+function spriteSlime(cx,cy,a=0){const squish=Math.round(Math.sin(a*8)*3);cy+=Math.abs(squish);rect(cx-18,cy-8,36,20-squish,'#0369a1');rect(cx-13,cy-14-squish,26,7,'#38bdf8');rect(cx-9,cy-4,6,5,'#082f49');rect(cx+4,cy-4,6,5,'#082f49');rect(cx-13,cy+12,7,5,'#22d3ee');rect(cx+6,cy+12,7,5,'#22d3ee')}
+function spriteWarden(cx,cy,a=0){const pulse=Math.round(Math.sin(a*6)*3),glow=enemy&&enemy.hp<=30?'#fef08a':'#fb7185';rect(cx-30-pulse,cy-28-pulse,60+pulse*2,56+pulse*2,'#3b0b20');rect(cx-24,cy-34,48,6,'#7f1d1d');rect(cx-35,cy-18,8,28,'#be123c');rect(cx+27,cy-18,8,28,'#be123c');rect(cx-23,cy-20,46,38,'#9f1239');rect(cx-15,cy-11,10,9,glow);rect(cx+5,cy-11,10,9,glow);rect(cx-10,cy+7,20,5,'#500724');rect(cx-18,cy+18,9,12,'#e11d48');rect(cx+9,cy+18,9,12,'#e11d48')}
+function drawHeart(){const p=Math.round(Math.sin(animT*10)*1);rect(heart.x-5,heart.y-5+p,10,10,'#ff334d');rect(heart.x-8,heart.y-2+p,16,5,'#ff334d');rect(heart.x-5,heart.y-8+p,5,5,'#ff334d');rect(heart.x+1,heart.y-8+p,5,5,'#ff334d')}
+function pixelText(t,y,size=20){x.font='bold '+size+'px monospace';x.fillStyle='#fff';x.textAlign='center';x.fillText(t,280,y)}
+function worldSprite(px,py,type){
+ const sx=px-camera.x,sy=py-camera.y;
+ if(type==='player'){const bob=Math.sin(animT*10)*2,step=Math.sin(animT*10)>0?2:-2;rect(sx-7,sy-10+bob,14,14,'#f472b6');rect(sx-5,sy-15+bob,10,6,'#f9a8d4');rect(sx-10,sy+3+step,5,7,'#f472b6');rect(sx+5,sy+3-step,5,7,'#f472b6')}
+ else if(type==='mite')spriteMite(sx,sy,animT);
+ else if(type==='clock')spriteClock(sx,sy,animT);
+ else if(type==='bat')spriteBat(sx,sy,animT);
+ else if(type==='rock')spriteRock(sx,sy,animT);
+ else spriteSlime(sx,sy,animT);
 }
-function drawHeart(){rect(heart.x-5,heart.y-5,10,10,'#ff334d');rect(heart.x-8,heart.y-2,16,5,'#ff334d');rect(heart.x-5,heart.y-8,5,5,'#ff334d');rect(heart.x+1,heart.y-8,5,5,'#ff334d')}
-function pixelText(t,y,size=20){x.font='bold '+size+'px monospace';x.fillStyle='#fff';x.textAlign='center';x.fillText(t,360,y)}
+function drawWorld(){
+ x.fillStyle='#101820';x.fillRect(0,0,560,390);
+ for(let yy=0;yy<MAPH;yy+=40)for(let xx=0;xx<MAPW;xx+=40){
+  const sx=xx-camera.x,sy=yy-camera.y;if(sx<-40||sx>560||sy<-40||sy>390)continue;
+  let c='#26382b';if(yy<300)c='#292331';else if(xx>1200&&yy<760)c='#30313a';else if(xx>650&&xx<1250&&yy>650)c='#18333b';else if(yy>300)c='#29432d';
+  rect(sx,sy,40,40,c);
+ }
+ // paths
+ x.fillStyle='#5a4b39';x.fillRect(0-camera.x,880-camera.y,1350,70);x.fillRect(1150-camera.x,250-camera.y,80,700);
+ // landmarks
+ rect(80-camera.x,120-camera.y,170,90,'#31553b');pixelText('MOSSWOOD',45,14);
+ rect(1420-camera.x,55-camera.y,300,220,'#442b43');rect(1470-camera.x,95-camera.y,200,160,'#25172d');x.strokeStyle='#a78bfa';x.strokeRect(1470-camera.x,95-camera.y,200,160);
+ rect(1350-camera.x,275-camera.y,350,90,'#55525f');
+ rect(770-camera.x,790-camera.y,310,170,'#1b5561');rect(820-camera.x,750-camera.y,40,40,'#67e8f9');rect(1010-camera.x,720-camera.y,50,50,'#67e8f9');
+ // trees/crystals
+ for(let i=0;i<28;i++){const px=(i*173)%MAPW,py=340+((i*97)%650),sx=px-camera.x,sy=py-camera.y;if(sx>-30&&sx<590&&sy>-30&&sy<420){if(px>650&&px<1250&&py>650){rect(sx-8,sy-18,16,36,'#67e8f9');rect(sx-15,sy-5,30,10,'#155e75')}else{rect(sx-5,sy-18,10,25,'#6b4428');rect(sx-18,sy-25,36,22,'#3f6f45')}}}
+ worldSprite(player.x,player.y,'player');
+ rect(470-camera.x,330-camera.y,70,25,'#111827');x.fillStyle='#fff';x.font='bold 11px monospace';x.textAlign='center';x.fillText('NORTH →',505-camera.x,347-camera.y);
+ x.fillStyle='rgba(0,0,0,.55)';x.fillRect(8,8,210,42);x.fillStyle='#fff';x.font='bold 13px monospace';x.textAlign='left';x.fillText(zoneName(player.x,player.y),18,27);x.font='11px monospace';x.fillText('Find the fortress to the north!',18,43);
+}
 function draw(){
- x.clearRect(0,0,720,500);x.fillStyle='#08090c';x.fillRect(0,0,720,500);
- if(mode==='world'){
-  x.fillStyle='#161b22';x.fillRect(40,70,640,390);x.strokeStyle='#d1d5db';x.lineWidth=4;x.strokeRect(40,70,640,390);
-  for(let i=0;i<20;i++){rect(65+(i*71)%580,100+(i*43)%330,16,16,'#243b2f')}
-  rect(300,270,120,90,'#171717');x.strokeStyle='#fff';x.strokeRect(300,270,120,90);
-  rect(player.x-7,player.y-7,14,14,'#f472b6');rect(590,95,70,45,'#fb7185');pixelText('WARDEN',120,12);pixelText('PIXEL QUEST',35,24);pixelText('Find the Warden →',485,16);
- }else if(mode==='battle'||mode==='dodge'||mode==='victory'){
-  pixelText(enemy?enemy.name:'BATTLE',45,24);
-  if(enemy){
-   if(enemy.name==='Moss Mite')spriteMite(360,125);
-   else if(enemy.name==='Clockling')spriteClock(360,125);
-   else if(enemy.name==='Gloom Bat')spriteBat(360,125);
-   else if(enemy.name==='Rocko')spriteRock(360,125);
-   else if(enemy.name==='Spark Slime')spriteSlime(360,125);
-   else spriteWarden(360,125);
-  }
-  x.strokeStyle='#fff';x.lineWidth=3;x.strokeRect(120,190,480,270);
-  if(mode==='dodge'){
-   for(const s of shots){if(s.type==='orb'){x.fillStyle=enemy&&enemy.name==='THE PIXEL WARDEN'?'#fb7185':'#f8fafc';x.beginPath();x.arc(s.x,s.y,s.r,0,Math.PI*2);x.fill()}else rect(s.x-s.r,s.y-s.r,s.r*2,s.r*2,'#f8fafc')}
-   drawHeart();
-   if(enemy&&enemy.name==='THE PIXEL WARDEN'){const phase=enemy.hp<=30?3:enemy.hp<=60?2:1;pixelText('PHASE '+phase,215,14)}
-  }else if(mode==='battle'){pixelText('Choose an action.',250,18);pixelText('FIGHT  ACT  ITEM  MERCY',420,16);if(enemy&&enemy.name==='THE PIXEL WARDEN'){x.fillStyle='#3f3f46';x.fillRect(220,275,280,12);x.fillStyle='#fb7185';x.fillRect(220,275,280*Math.max(0,enemy.hp/enemy.max),12)}}
-  else {pixelText('VICTORY!',330,28);pixelText('Press any action to continue.',380,16)}
- }else if(mode==='win'){pixelText('YOU WIN!',210,42);pixelText('The Pixel Quest is complete.',270,20);pixelText('Thanks for playing!',320,18)}
- else {pixelText('GAME OVER',220,38);pixelText('Your adventure ends here.',280,18)}
+ x.clearRect(0,0,560,390);
+ if(mode==='world'){drawWorld();return}
+ x.fillStyle='#08090c';x.fillRect(0,0,560,390);
+ if(mode==='battle'||mode==='dodge'||mode==='victory'){
+  pixelText(enemy?enemy.name:'BATTLE',30,20);
+  if(enemy){if(enemy.name==='Moss Mite')spriteMite(280,95,animT);else if(enemy.name==='Clockling')spriteClock(280,95,animT);else if(enemy.name==='Gloom Bat')spriteBat(280,95,animT);else if(enemy.name==='Rocko')spriteRock(280,95,animT);else if(enemy.name==='Spark Slime')spriteSlime(280,95,animT);else spriteWarden(280,95,animT)}
+  x.strokeStyle='#fff';x.lineWidth=3;x.strokeRect(70,145,420,230);
+  if(mode==='dodge'){for(const s of shots){if(s.type==='orb'){x.fillStyle=enemy&&enemy.name==='THE PIXEL WARDEN'?'#fb7185':'#f8fafc';x.beginPath();x.arc(s.x,s.y,s.r,0,Math.PI*2);x.fill()}else rect(s.x-s.r,s.y-s.r,s.r*2,s.r*2,'#f8fafc')}drawHeart();if(enemy&&enemy.name==='THE PIXEL WARDEN'){const phase=enemy.hp<=30?3:enemy.hp<=60?2:1;pixelText('PHASE '+phase,165,12)}}
+  else if(mode==='battle'){pixelText('Choose an action.',200,16);pixelText('FIGHT  ACT  ITEM  MERCY',350,14);if(enemy&&enemy.name==='THE PIXEL WARDEN'){x.fillStyle='#3f3f46';x.fillRect(170,220,220,10);x.fillStyle='#fb7185';x.fillRect(170,220,220*Math.max(0,enemy.hp/enemy.max),10)}}
+  else{pixelText('VICTORY!',270,25);pixelText('Press any action to continue.',315,14)}
+ }else if(mode==='win'){pixelText('YOU WIN!',165,38);pixelText('The Pixel Quest is complete.',215,18);pixelText('Thanks for playing!',250,16)}
+ else{pixelText('GAME OVER',175,34);pixelText('Press Back and try again.',225,16)}
 }
 function loop(t){const dt=Math.min(.033,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}
 updateHud();requestAnimationFrame(loop);
