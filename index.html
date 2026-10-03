@@ -494,7 +494,7 @@ footer{
     <button class="rhythmKey soulAct" data-act="item">♥ ITEM</button>
     <button class="rhythmKey soulAct" data-act="mercy">◇ MERCY</button>
   </div>
-  <div class="status" id="soulStatus">Explore the little pixel world. Walk into an enemy to battle.</div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"><div class="status" id="soulStatus" style="margin-top:0">Explore the little pixel world. Walk into an enemy to battle.</div><button id="soulMusic" style="width:auto">🎵 Music: ON</button></div>
   <div class="help"><b>WASD / Arrow Keys</b> = move • In battle, move the heart with the same keys • <b>Enter</b> = select</div>
 </section>
 
@@ -2156,6 +2156,13 @@ x.imageSmoothingEnabled=false;x.scale(cv.width/560,cv.height/390);
 const hpE=document.getElementById('soulHP'),lvE=document.getElementById('soulLV'),exE=document.getElementById('soulEXP'),enE=document.getElementById('soulEnemy'),st=document.getElementById('soulStatus');
 let keys=new Set(),mode='world',enemy=null,heart={x:280,y:330},player={x:280,y:300},hp=20,lv=1,exp=0,inv=0,shots=[],last=0,worldT=0,dodgeT=0,animT=0,camera={x:0,y:0},encounterCooldown=0;
 const MAPW=1800,MAPH=1200;
+let musicOn=true,musicCtx=null,musicTimer=null,musicStep=0,musicMode='world';
+const musicPatterns={world:[220,262,294,330,294,262,247,196],battle:[196,233,262,294,262,233,220,175],boss:[110,147,165,196,165,147,123,98]};
+function ensureMusic(){if(!musicCtx)musicCtx=new (window.AudioContext||window.webkitAudioContext)();if(musicCtx.state==='suspended')musicCtx.resume();}
+function tone(freq,dur,type='square',gain=.035,when=0){if(!musicCtx||!musicOn)return;const o=musicCtx.createOscillator(),g=musicCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0.0001,musicCtx.currentTime+when);g.gain.exponentialRampToValueAtTime(gain,musicCtx.currentTime+when+.015);g.gain.exponentialRampToValueAtTime(0.0001,musicCtx.currentTime+when+dur);o.connect(g);g.connect(musicCtx.destination);o.start(musicCtx.currentTime+when);o.stop(musicCtx.currentTime+when+dur+.02)}
+function musicTick(){if(!musicOn)return;const p=musicPatterns[musicMode]||musicPatterns.world,i=musicStep++%p.length;tone(p[i],.18,'square',.028);if(i%2===0)tone(p[i]/2,.24,'triangle',.018,.02);if(musicMode==='boss'&&i%2===0)tone(70,.07,'sawtooth',.012,.01)}
+function setMusicMode(m){if(musicMode===m&&musicTimer)return;musicMode=m;ensureMusic();if(musicTimer)clearInterval(musicTimer);musicStep=0;musicTick();musicTimer=setInterval(musicTick,250)}
+function stopMusic(){if(musicTimer){clearInterval(musicTimer);musicTimer=null}if(musicCtx)musicCtx.suspend()}
 const enemies=[
 {name:'Moss Mite',hp:18,max:18,atk:1,color:'#4ade80',text:'It wiggles politely.'},
 {name:'Clockling',hp:24,max:24,atk:2,color:'#facc15',text:'It ticks nervously.'},
@@ -2165,17 +2172,17 @@ const enemies=[
 ];
 const boss={name:'THE PIXEL WARDEN',hp:90,max:90,atk:5,color:'#fb7185',text:'The Warden blocks the path forward.'};
 function rnd(a,b){return Math.random()*(b-a)+a}
-function resetWorld(){mode='world';enemy=null;player={x:280,y:980};hp=20;lv=1;exp=0;shots=[];inv=0;worldT=0;animT=0;camera={x:0,y:0};encounterCooldown=2;updateHud();st.textContent='Explore the Pixel Quest. Find the Warden in the northern fortress.'}
+function resetWorld(){mode='world';enemy=null;player={x:280,y:980};hp=20;lv=1;exp=0;shots=[];inv=0;worldT=0;animT=0;camera={x:0,y:0};encounterCooldown=2;setMusicMode('world');updateHud();st.textContent='Explore the Pixel Quest. Find the Warden in the northern fortress.'}
 function updateHud(){hpE.textContent=Math.max(0,hp);lvE.textContent=lv;exE.textContent=exp;enE.textContent=enemy?enemy.name:'—'}
-function startBattle(e){enemy={...e};mode='battle';heart={x:280,y:330};shots=[];st.textContent=enemy.name+' appears! Choose an action.';updateHud()}
+function startBattle(e){enemy={...e};mode='battle';heart={x:280,y:330};shots=[];setMusicMode(enemy.name==='THE PIXEL WARDEN'?'boss':'battle');st.textContent=enemy.name+' appears! Choose an action.';updateHud()}
 function startBoss(){startBattle(boss);st.textContent='The PIXEL WARDEN awakens!';}
-function endBattle(){mode='world';enemy=null;shots=[];heart={x:280,y:330};encounterCooldown=1.5;updateHud()}
+function endBattle(){mode='world';enemy=null;shots=[];heart={x:280,y:330};encounterCooldown=1.5;setMusicMode('world');updateHud()}
 function damageEnemy(n){
  enemy.hp-=n;
  if(enemy.hp<=0){
   const gain=enemy.name==='THE PIXEL WARDEN'?50:10;exp+=gain;
   if(exp>=30){lv++;exp-=30;hp=Math.min(20,hp+4)}
-  if(enemy.name==='THE PIXEL WARDEN'){mode='win';st.textContent='🏆 You cleared the Pixel Quest!'}
+  if(enemy.name==='THE PIXEL WARDEN'){mode='win';stopMusic();st.textContent='🏆 You cleared the Pixel Quest!'}
   else{st.textContent=enemy.name+' was defeated! +'+gain+' EXP';mode='victory'}
   updateHud();
  }else{st.textContent=enemy.name+' has '+enemy.hp+' HP left.';enemyTurn()}
@@ -2200,6 +2207,7 @@ function act(a){
 document.querySelectorAll('.soulAct').forEach(b=>b.onclick=()=>act(b.dataset.act));
 document.getElementById('soulBack').onclick=()=>{sec.classList.add('hidden');home.classList.remove('hidden');resetWorld()};
 document.querySelector('[data-open="soulbound"]').onclick=()=>{home.classList.add('hidden');sec.classList.remove('hidden');resetWorld()};
+document.getElementById('soulMusic').onclick=()=>{musicOn=!musicOn;if(musicOn){setMusicMode(mode==='battle'||mode==='dodge'||mode==='victory'?(enemy&&enemy.name==='THE PIXEL WARDEN'?'boss':'battle'):'world');document.getElementById('soulMusic').textContent='🎵 Music: ON'}else{stopMusic();document.getElementById('soulMusic').textContent='🔇 Music: OFF'}};
 window.addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(sec.classList.contains('hidden'))return;if(e.key==='Enter'&&mode==='battle')act('fight')});
 window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 
