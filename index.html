@@ -158,6 +158,8 @@ footer{
   color:#6b7280;
   padding:28px
 }
+
+.rhythmKey{min-height:58px;border:1px solid #4b5563;border-radius:10px;background:#1f2937;color:#fff;font-size:24px;font-weight:800;cursor:pointer}.rhythmKey small{font-size:11px;color:#9ca3af}.rhythmKey:active{background:#4f46e5}
 </style>
 </head>
 
@@ -219,6 +221,13 @@ footer{
       <h3>Mini Pong</h3>
       <p>Use your paddle to beat the computer.</p>
       <button data-open="pong">Play</button>
+    </article>
+
+    <article class="game" data-name="Neon Showdown Rhythm">
+      <div class="icon">🎤</div>
+      <h3>Neon Showdown</h3>
+      <p>An original four-lane rhythm battle with an electronic soundtrack.</p>
+      <button data-open="rhythm">Play</button>
     </article>
 
     <article class="game" data-name="Snake">
@@ -361,6 +370,28 @@ footer{
   <button id="pongStart" style="margin-top:10px;width:auto">Start</button>
 </section>
 
+
+<section id="rhythm" class="player hidden">
+  <div class="topline"><h2>🎤 Neon Showdown</h2><button id="rhythmBack" style="width:auto">← Back to games</button></div>
+  <div class="stats">
+    <span class="pill">Score: <b id="rhythmScore">0</b></span>
+    <span class="pill">Combo: <b id="rhythmCombo">0</b></span>
+    <span class="pill">Accuracy: <b id="rhythmAccuracy">100%</b></span>
+    <span class="pill">Misses: <b id="rhythmMisses">0</b></span>
+  </div>
+  <div style="max-width:760px;margin:auto">
+    <canvas id="rhythmCanvas" width="736" height="480" style="background:#090d1a;cursor:default"></canvas>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px">
+      <button class="rhythmKey" data-lane="0">←<br><small>A</small></button>
+      <button class="rhythmKey" data-lane="1">↓<br><small>S</small></button>
+      <button class="rhythmKey" data-lane="2">↑<br><small>W</small></button>
+      <button class="rhythmKey" data-lane="3">→<br><small>D</small></button>
+    </div>
+    <div class="status" id="rhythmStatus">Press Start, then hit the notes when they reach the line.</div>
+    <button id="rhythmStart" style="margin-top:10px;width:auto">Start</button>
+  </div>
+</section>
+
 </main>
 
 <footer>
@@ -390,7 +421,7 @@ document.getElementById('search').oninput=e=>{
 
   document.querySelectorAll('.game').forEach(g=>{
     g.style.display=
-      g.dataset.name.toLowerCase().includes(q)
+      (g.dataset.name||'').toLowerCase().includes(q)
       ? ''
       : 'none';
   });
@@ -1694,6 +1725,90 @@ function pongLoop(t){
 window.addEventListener('keydown',e=>pongKeys.add(e.key.toLowerCase()));window.addEventListener('keyup',e=>pongKeys.delete(e.key.toLowerCase()));
 document.querySelector('[data-open="pong"]').onclick=()=>{openMini('pong');pongReset();pongRunning=false;document.getElementById('pongStatus').textContent='Press Start to play.';};
 document.getElementById('pongStart').onclick=()=>{pongReset();pongRunning=true;document.getElementById('pongStatus').textContent='First to 7!';pongLast=performance.now();cancelAnimationFrame(pongAnim);pongAnim=requestAnimationFrame(pongLoop);};
+
+
+/* Original rhythm game: Neon Showdown */
+const rhythm=document.getElementById('rhythm'),rhythmCanvas=document.getElementById('rhythmCanvas'),rctx=rhythmCanvas.getContext('2d');
+const rhythmKeys=new Set(), rhythmButtons=document.querySelectorAll('.rhythmKey');
+const rhythmScoreEl=document.getElementById('rhythmScore'),rhythmComboEl=document.getElementById('rhythmCombo'),rhythmAccuracyEl=document.getElementById('rhythmAccuracy'),rhythmMissesEl=document.getElementById('rhythmMisses'),rhythmStatus=document.getElementById('rhythmStatus');
+let rhythmRunning=false,rhythmStartTime=0,rhythmNotes=[],rhythmHits=0,rhythmMisses=0,rhythmCombo=0,rhythmScore=0,rhythmJudged=0,rhythmAnim=0,rhythmAudio=null,rhythmLastBeat=-1;
+const rhythmBpm=128,rhythmBeat=60000/rhythmBpm,rhythmSongLength=36000,rhythmTravel=1500;
+function makeRhythmChart(){
+  const a=[];
+  for(let i=0;i<72;i++){
+    const lane=(i*7+i*i)%4;
+    a.push({t:900+i*rhythmBeat/2,lane,hit:false,miss:false});
+    if(i%8===5)a.push({t:900+i*rhythmBeat/2+rhythmBeat/4,lane:(lane+2)%4,hit:false,miss:false});
+  }
+  return a.sort((a,b)=>a.t-b.t);
+}
+function rhythmReset(){
+  rhythmRunning=false;cancelAnimationFrame(rhythmAnim);rhythmNotes=makeRhythmChart();rhythmHits=0;rhythmMisses=0;rhythmCombo=0;rhythmScore=0;rhythmJudged=0;rhythmLastBeat=-1;
+  rhythmScoreEl.textContent='0';rhythmComboEl.textContent='0';rhythmAccuracyEl.textContent='100%';rhythmMissesEl.textContent='0';rhythmStatus.textContent='Press Start, then hit the notes when they reach the line.';
+  rctx.clearRect(0,0,736,480);rctx.fillStyle='#090d1a';rctx.fillRect(0,0,736,480);rctx.fillStyle='#9ca3af';rctx.font='bold 22px system-ui';rctx.textAlign='center';rctx.fillText('NEON SHOWDOWN',368,100);rctx.font='16px system-ui';rctx.fillText('Original rhythm challenge',368,130);
+}
+function rhythmPlaySound(){
+  try{
+    if(!rhythmAudio)rhythmAudio=new (window.AudioContext||window.webkitAudioContext)();
+    const now=rhythmAudio.currentTime;
+    const beat=Math.floor((performance.now()-rhythmStartTime)/rhythmBeat);
+    if(beat!==rhythmLastBeat){rhythmLastBeat=beat;const o=rhythmAudio.createOscillator(),g=rhythmAudio.createGain();o.type='square';o.frequency.value=beat%4===0?220:110;g.gain.setValueAtTime(.035,now);g.gain.exponentialRampToValueAtTime(.001,now+.07);o.connect(g);g.connect(rhythmAudio.destination);o.start(now);o.stop(now+.08);}
+  }catch(e){}
+}
+function rhythmJudge(lane){
+  if(!rhythmRunning)return;
+  const elapsed=performance.now()-rhythmStartTime;
+  let best=null,bestAbs=Infinity;
+  for(const n of rhythmNotes)if(!n.hit&&!n.miss&&n.lane===lane){const d=Math.abs(n.t-elapsed);if(d<bestAbs){best=n;bestAbs=d;}}
+  if(!best)return;
+  if(bestAbs<=150){
+    best.hit=true;rhythmHits++;rhythmJudged++;rhythmCombo++;
+    const pts=bestAbs<=55?1000:bestAbs<=100?650:300;rhythmScore+=pts+rhythmCombo*5;
+    rhythmStatus.textContent=bestAbs<=55?'PERFECT!':bestAbs<=100?'GOOD!':'OK!';
+  }else if(bestAbs<260){
+    best.miss=true;rhythmMisses++;rhythmJudged++;rhythmCombo=0;rhythmStatus.textContent='MISS';
+  }else return;
+  updateRhythmHud();
+}
+function updateRhythmHud(){
+  rhythmScoreEl.textContent=Math.floor(rhythmScore);rhythmComboEl.textContent=rhythmCombo;rhythmMissesEl.textContent=rhythmMisses;
+  const acc=rhythmJudged?Math.round(rhythmHits/rhythmJudged*100):100;rhythmAccuracyEl.textContent=acc+'%';
+}
+function rhythmDraw(t){
+  if(!rhythmRunning)return;
+  const elapsed=t-rhythmStartTime;
+  if(elapsed>rhythmSongLength){rhythmRunning=false;rhythmStatus.textContent='🏆 Song complete! Score '+Math.floor(rhythmScore)+' • '+rhythmAccuracyEl.textContent+' accuracy';return;}
+  rhythmPlaySound();
+  rctx.clearRect(0,0,736,480);rctx.fillStyle='#090d1a';rctx.fillRect(0,0,736,480);
+  const laneW=150, left=68, hitY=390;
+  rctx.strokeStyle='rgba(255,255,255,.08)';rctx.lineWidth=1;
+  for(let i=0;i<=4;i++){rctx.beginPath();rctx.moveTo(left+i*laneW,0);rctx.lineTo(left+i*laneW,480);rctx.stroke();}
+  rctx.strokeStyle='#818cf8';rctx.lineWidth=3;rctx.beginPath();rctx.moveTo(left,hitY);rctx.lineTo(left+4*laneW,hitY);rctx.stroke();
+  const arrows=['←','↓','↑','→'];
+  rctx.textAlign='center';rctx.font='bold 30px system-ui';
+  for(let i=0;i<4;i++){rctx.fillStyle='#374151';rctx.fillRect(left+i*laneW+10,hitY+14,laneW-20,54);rctx.fillStyle='#d1d5db';rctx.fillText(arrows[i],left+i*laneW+laneW/2,hitY+51);}
+  for(const n of rhythmNotes){
+    if(!n.hit&&!n.miss&&elapsed-n.t>170){n.miss=true;rhythmMisses++;rhythmJudged++;rhythmCombo=0;}
+    if(n.hit||n.miss)continue;
+    const y=hitY-(n.t-elapsed)/rhythmTravel*hitY;
+    if(y<-30||y>480)continue;
+    rctx.fillStyle=['#60a5fa','#34d399','#fbbf24','#f472b6'][n.lane];
+    rctx.beginPath();rctx.roundRect(left+n.lane*laneW+30,y-14,laneW-60,28,8);rctx.fill();
+    rctx.fillStyle='#111827';rctx.font='bold 22px system-ui';rctx.fillText(arrows[n.lane],left+n.lane*laneW+laneW/2,y+8);
+  }
+  updateRhythmHud();rhythmAnim=requestAnimationFrame(rhythmDraw);
+}
+function rhythmStartGame(){
+  if(rhythmAudio&&rhythmAudio.state==='suspended')rhythmAudio.resume();
+  rhythmNotes=makeRhythmChart();rhythmHits=0;rhythmMisses=0;rhythmCombo=0;rhythmScore=0;rhythmJudged=0;rhythmLastBeat=-1;rhythmRunning=true;rhythmStartTime=performance.now()+800;rhythmStatus.textContent='Get ready...';cancelAnimationFrame(rhythmAnim);rhythmAnim=requestAnimationFrame(rhythmDraw);
+}
+document.querySelector('[data-open="rhythm"]').onclick=()=>{openMini('rhythm');rhythmReset();};
+document.getElementById('rhythmBack').onclick=()=>{rhythmRunning=false;cancelAnimationFrame(rhythmAnim);rhythm.classList.add('hidden');home.classList.remove('hidden');};
+document.getElementById('rhythmStart').onclick=rhythmStartGame;
+window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();const map={a:0,s:1,w:2,d:3,arrowleft:0,arrowdown:1,arrowup:2,arrowright:3};if(map[k]!==undefined){e.preventDefault();rhythmKeys.add(k);rhythmJudge(map[k]);}});
+window.addEventListener('keyup',e=>rhythmKeys.delete(e.key.toLowerCase()));
+rhythmButtons.forEach(b=>{b.addEventListener('pointerdown',()=>rhythmJudge(Number(b.dataset.lane)));});
+rhythmReset();
 
 
 // Game loop
