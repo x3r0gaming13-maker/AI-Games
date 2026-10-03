@@ -237,6 +237,13 @@ footer{
       <button data-open="editor">Open</button>
     </article>
 
+    <article class="game" data-name="Soulbound: Pixel Quest">
+      <div class="icon">💠</div>
+      <h3>Soulbound: Pixel Quest</h3>
+      <p>A pixel-art RPG adventure with five enemies and a boss battle.</p>
+      <button data-open="soulbound">Play</button>
+    </article>
+
     <article class="game" data-name="Snake">
       <div class="icon">🐍</div>
       <h3>Snake</h3>
@@ -443,6 +450,25 @@ footer{
 </section>
 
 </main>
+
+<section id="soulbound" class="player hidden">
+  <div class="topline"><h2>💠 Soulbound: Pixel Quest</h2><button id="soulBack" style="width:auto">← Back to games</button></div>
+  <div class="stats">
+    <span class="pill">❤️ HP: <b id="soulHP">20</b>/20</span>
+    <span class="pill">⭐ LV: <b id="soulLV">1</b></span>
+    <span class="pill">🏆 EXP: <b id="soulEXP">0</b></span>
+    <span class="pill">👾 Enemy: <b id="soulEnemy">—</b></span>
+  </div>
+  <canvas id="soulCanvas" width="720" height="500" style="background:#050505;image-rendering:pixelated;image-rendering:crisp-edges"></canvas>
+  <div id="soulMenu" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px">
+    <button class="rhythmKey soulAct" data-act="fight">⚔ FIGHT</button>
+    <button class="rhythmKey soulAct" data-act="act">★ ACT</button>
+    <button class="rhythmKey soulAct" data-act="item">♥ ITEM</button>
+    <button class="rhythmKey soulAct" data-act="mercy">◇ MERCY</button>
+  </div>
+  <div class="status" id="soulStatus">Explore the little pixel world. Walk into an enemy to battle.</div>
+  <div class="help"><b>WASD / Arrow Keys</b> = move • In battle, move the heart with the same keys • <b>Enter</b> = select</div>
+</section>
 
 <footer>
   GameHub • Original game content
@@ -2090,6 +2116,84 @@ reset();
 requestAnimationFrame(loop);
 
 </script>
-
+<script>
+/* Soulbound: Pixel Quest — original pixel RPG */
+(()=>{
+const sec=document.getElementById('soulbound'),cv=document.getElementById('soulCanvas'),x=cv.getContext('2d');
+x.imageSmoothingEnabled=false;
+const hpE=document.getElementById('soulHP'),lvE=document.getElementById('soulLV'),exE=document.getElementById('soulEXP'),enE=document.getElementById('soulEnemy'),st=document.getElementById('soulStatus');
+let keys=new Set(),mode='world',enemy=null,heart={x:360,y:385},player={x:360,y:330},hp=20,lv=1,exp=0,inv=0,shots=[],last=0,worldT=0;
+const enemies=[
+ {name:'Moss Mite',hp:18,max:18,atk:1,color:'#4ade80',text:'It wiggles politely.'},
+ {name:'Clockling',hp:24,max:24,atk:2,color:'#facc15',text:'It ticks nervously.'},
+ {name:'Gloom Bat',hp:20,max:20,atk:2,color:'#a78bfa',text:'It refuses to look at you.'},
+ {name:'Rocko',hp:30,max:30,atk:3,color:'#94a3b8',text:'Rocko is trying his best.'},
+ {name:'Spark Slime',hp:26,max:26,atk:3,color:'#38bdf8',text:'It makes a tiny electric buzz.'}
+];
+const boss={name:'THE PIXEL WARDEN',hp:90,max:90,atk:5,color:'#fb7185',text:'The Warden blocks the path forward.'};
+function rnd(a,b){return Math.random()*(b-a)+a}
+function resetWorld(){mode='world';enemy=null;player={x:360,y:330};hp=20;lv=1;exp=0;shots=[];inv=0;worldT=0;updateHud();st.textContent='Explore the little pixel world. Walk into an enemy to battle.'}
+function updateHud(){hpE.textContent=Math.max(0,hp);lvE.textContent=lv;exE.textContent=exp;enE.textContent=enemy?enemy.name:'—'}
+function startBattle(e){enemy={...e};mode='battle';heart={x:360,y:385};shots=[];st.textContent=enemy.name+' appears! Choose an action.';updateHud()}
+function startBoss(){startBattle(boss);st.textContent='The PIXEL WARDEN challenges you!';}
+function endBattle(){mode='world';enemy=null;shots=[];heart={x:360,y:385};updateHud()}
+function damageEnemy(n){enemy.hp-=n;if(enemy.hp<=0){const gain=enemy.name==='THE PIXEL WARDEN'?50:10;exp+=gain;if(exp>=30){lv++;exp-=30;hp=Math.min(20,hp+4)}if(enemy.name==='THE PIXEL WARDEN'){mode='win';st.textContent='🏆 You cleared the Pixel Quest!';}else{st.textContent=enemy.name+' was defeated! +'+gain+' EXP';mode='victory';}updateHud()}else{st.textContent=enemy.name+' has '+enemy.hp+' HP left.';enemyTurn()}}
+function enemyTurn(){mode='dodge';shots=[];let n=enemy.name==='THE PIXEL WARDEN'?13:7;for(let i=0;i<n;i++)shots.push({x:rnd(170,550),y:rnd(220,300),vx:rnd(-55,55),vy:rnd(35,85),r:5});setTimeout(()=>{if(mode==='dodge')st.textContent='Dodge the pixel attacks!';},50)}
+function act(a){
+ if(mode==='victory'){endBattle();return}
+ if(mode==='win')return;
+ if(mode!=='battle')return;
+ if(a==='fight'){damageEnemy(6+lv*2)}
+ if(a==='act'){st.textContent=enemy.text+' It seems slightly less hostile.';enemy.atk=Math.max(1,enemy.atk-1);enemyTurn()}
+ if(a==='item'){if(hp<20){hp=Math.min(20,hp+8);st.textContent='You used a Pixel Snack. HP restored!';enemyTurn()}else st.textContent='Your HP is already full!'}
+ if(a==='mercy'){if(enemy.name!=='THE PIXEL WARDEN'&&Math.random()<.65){st.textContent=enemy.name+' accepts your mercy!';mode='victory'}else{st.textContent='It is not ready to spare you.';enemyTurn()}}
+ updateHud()
+}
+document.querySelectorAll('.soulAct').forEach(b=>b.onclick=()=>act(b.dataset.act));
+document.getElementById('soulBack').onclick=()=>{sec.classList.add('hidden');home.classList.remove('hidden');resetWorld()};
+document.querySelector('[data-open="soulbound"]').onclick=()=>{home.classList.add('hidden');sec.classList.remove('hidden');resetWorld()};
+window.addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(sec.classList.contains('hidden'))return;if(e.key==='Enter'&&mode==='battle')act('fight');});
+window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+function update(dt){
+ if(sec.classList.contains('hidden'))return;
+ if(mode==='world'){
+  let dx=(keys.has('d')||keys.has('arrowright'))-(keys.has('a')||keys.has('arrowleft'));
+  let dy=(keys.has('s')||keys.has('arrowdown'))-(keys.has('w')||keys.has('arrowup'));
+  let m=Math.hypot(dx,dy)||1;player.x+=dx/m*120*dt;player.y+=dy/m*120*dt;
+  player.x=Math.max(55,Math.min(665,player.x));player.y=Math.max(105,Math.min(430,player.y));worldT+=dt;
+  if(player.x>590&&player.y<160){startBoss();return}
+  if(Math.random()<dt*.002){const e=enemies[Math.floor(Math.random()*enemies.length)];startBattle(e)}
+ }
+ if(mode==='dodge'){
+  let dx=(keys.has('d')||keys.has('arrowright'))-(keys.has('a')||keys.has('arrowleft'));
+  let dy=(keys.has('s')||keys.has('arrowdown'))-(keys.has('w')||keys.has('arrowup'));
+  let m=Math.hypot(dx,dy)||1;heart.x+=dx/m*190*dt;heart.y+=dy/m*190*dt;heart.x=Math.max(150,Math.min(570,heart.x));heart.y=Math.max(335,Math.min(455,heart.y));
+  inv=Math.max(0,inv-dt);
+  for(const s of shots){s.x+=s.vx*dt;s.y+=s.vy*dt;if(inv<=0&&Math.hypot(s.x-heart.x,s.y-heart.y)<12){hp-=enemy.atk;inv=.65;updateHud();if(hp<=0){mode='gameover';st.textContent='💥 Your soul was scattered. Press Back and try again.'}else st.textContent='Ouch! Dodge the rest!'}}}
+ if(mode==='victory'){}
+}
+function pixelText(t,y,size=20){x.font='bold '+size+'px monospace';x.fillStyle='#fff';x.textAlign='center';x.fillText(t,360,y)}
+function draw(){
+ x.clearRect(0,0,720,500);x.fillStyle='#08090c';x.fillRect(0,0,720,500);
+ if(mode==='world'){
+  x.fillStyle='#161b22';x.fillRect(40,70,640,390);x.strokeStyle='#d1d5db';x.lineWidth=4;x.strokeRect(40,70,640,390);
+  x.fillStyle='#243b2f';for(let i=0;i<20;i++){x.fillRect(65+(i*71)%580,100+(i*43)%330,16,16)}
+  x.fillStyle='#171717';x.fillRect(300,270,120,90);x.strokeStyle='#fff';x.strokeRect(300,270,120,90);
+  x.fillStyle='#f472b6';x.fillRect(player.x-7,player.y-7,14,14);
+  x.fillStyle='#fb7185';x.fillRect(590,95,70,45);pixelText('WARDEN',120,12);
+  pixelText('PIXEL QUEST',35,24);pixelText('Find the Warden →',485,16);
+ }else if(mode==='battle'||mode==='dodge'||mode==='victory'){
+  pixelText(enemy?enemy.name:'BATTLE',45,24);
+  x.fillStyle=enemy?enemy.color:'#fff';x.fillRect(330,95,60,60);x.fillStyle='#050505';x.fillRect(342,108,10,10);x.fillRect(368,108,10,10);x.fillRect(350,132,22,7);
+  x.strokeStyle='#fff';x.lineWidth=3;x.strokeRect(120,190,480,270);
+  if(mode==='dodge'){x.fillStyle='#ff334d';x.fillRect(heart.x-5,heart.y-5,10,10);for(const s of shots){x.fillStyle='#f8fafc';x.fillRect(s.x-s.r,s.y-s.r,s.r*2,s.r*2)}}
+  else if(mode==='battle'){pixelText('Choose an action.',250,18);pixelText('FIGHT  ACT  ITEM  MERCY',420,16)}
+  else {pixelText('VICTORY!',330,28);pixelText('Press any action to continue.',380,16)}
+ }else if(mode==='win'){pixelText('YOU WIN!',210,42);pixelText('The Pixel Quest is complete.',270,20);pixelText('Thanks for playing!',320,18)}
+ else {pixelText('GAME OVER',220,38);pixelText('Your adventure ends here.',280,18)}
+}
+function loop(t){const dt=Math.min(.033,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}updateHud();requestAnimationFrame(loop);
+})();
+</script>
 </body>
 </html>
