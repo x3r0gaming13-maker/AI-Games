@@ -459,7 +459,7 @@ footer{
     <span class="pill">🏆 EXP: <b id="soulEXP">0</b></span>
     <span class="pill">👾 Enemy: <b id="soulEnemy">—</b></span>
   </div>
-  <canvas id="soulCanvas" width="720" height="500" style="background:#050505;image-rendering:pixelated;image-rendering:crisp-edges"></canvas>
+  <canvas id="soulCanvas" width="560" height="390" style="max-width:560px;margin:0 auto;background:#050505;image-rendering:pixelated;image-rendering:crisp-edges"></canvas>
   <div id="soulMenu" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px">
     <button class="rhythmKey soulAct" data-act="fight">⚔ FIGHT</button>
     <button class="rhythmKey soulAct" data-act="act">★ ACT</button>
@@ -2121,6 +2121,7 @@ requestAnimationFrame(loop);
 (()=>{
 const sec=document.getElementById('soulbound'),cv=document.getElementById('soulCanvas'),x=cv.getContext('2d');
 x.imageSmoothingEnabled=false;
+x.scale(cv.width/720,cv.height/500);
 const hpE=document.getElementById('soulHP'),lvE=document.getElementById('soulLV'),exE=document.getElementById('soulEXP'),enE=document.getElementById('soulEnemy'),st=document.getElementById('soulStatus');
 let keys=new Set(),mode='world',enemy=null,heart={x:360,y:385},player={x:360,y:330},hp=20,lv=1,exp=0,inv=0,shots=[],last=0,worldT=0;
 const enemies=[
