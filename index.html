@@ -2120,26 +2120,52 @@ requestAnimationFrame(loop);
 /* Soulbound: Pixel Quest — original pixel RPG */
 (()=>{
 const sec=document.getElementById('soulbound'),cv=document.getElementById('soulCanvas'),x=cv.getContext('2d');
-x.imageSmoothingEnabled=false;
-x.scale(cv.width/720,cv.height/500);
+x.imageSmoothingEnabled=false;x.scale(cv.width/720,cv.height/500);
 const hpE=document.getElementById('soulHP'),lvE=document.getElementById('soulLV'),exE=document.getElementById('soulEXP'),enE=document.getElementById('soulEnemy'),st=document.getElementById('soulStatus');
-let keys=new Set(),mode='world',enemy=null,heart={x:360,y:385},player={x:360,y:330},hp=20,lv=1,exp=0,inv=0,shots=[],last=0,worldT=0,dodgeT=0;
+let keys=new Set(),mode='world',enemy=null,heart={x:360,y:385},player={x:360,y:330},hp=20,lv=1,exp=0,inv=0,shots=[],last=0,worldT=0,dodgeT=0,attackT=0;
 const enemies=[
- {name:'Moss Mite',hp:18,max:18,atk:1,color:'#4ade80',text:'It wiggles politely.'},
- {name:'Clockling',hp:24,max:24,atk:2,color:'#facc15',text:'It ticks nervously.'},
- {name:'Gloom Bat',hp:20,max:20,atk:2,color:'#a78bfa',text:'It refuses to look at you.'},
- {name:'Rocko',hp:30,max:30,atk:3,color:'#94a3b8',text:'Rocko is trying his best.'},
- {name:'Spark Slime',hp:26,max:26,atk:3,color:'#38bdf8',text:'It makes a tiny electric buzz.'}
+{name:'Moss Mite',hp:18,max:18,atk:1,color:'#4ade80',text:'It wiggles politely.'},
+{name:'Clockling',hp:24,max:24,atk:2,color:'#facc15',text:'It ticks nervously.'},
+{name:'Gloom Bat',hp:20,max:20,atk:2,color:'#a78bfa',text:'It refuses to look at you.'},
+{name:'Rocko',hp:30,max:30,atk:3,color:'#94a3b8',text:'Rocko is trying his best.'},
+{name:'Spark Slime',hp:26,max:26,atk:3,color:'#38bdf8',text:'It makes a tiny electric buzz.'}
 ];
 const boss={name:'THE PIXEL WARDEN',hp:90,max:90,atk:5,color:'#fb7185',text:'The Warden blocks the path forward.'};
 function rnd(a,b){return Math.random()*(b-a)+a}
-function resetWorld(){mode='world';enemy=null;player={x:360,y:330};hp=20;lv=1;exp=0;shots=[];inv=0;worldT=0;updateHud();st.textContent='Explore the little pixel world. Walk into an enemy to battle.'}
+function resetWorld(){mode='world';enemy=null;player={x:360,y:330};hp=20;lv=1;exp=0;shots=[];inv=0;worldT=0;dodgeT=0;attackT=0;updateHud();st.textContent='Explore the little pixel world. Walk into an enemy to battle.'}
 function updateHud(){hpE.textContent=Math.max(0,hp);lvE.textContent=lv;exE.textContent=exp;enE.textContent=enemy?enemy.name:'—'}
 function startBattle(e){enemy={...e};mode='battle';heart={x:360,y:385};shots=[];st.textContent=enemy.name+' appears! Choose an action.';updateHud()}
 function startBoss(){startBattle(boss);st.textContent='The PIXEL WARDEN challenges you!';}
 function endBattle(){mode='world';enemy=null;shots=[];heart={x:360,y:385};updateHud()}
-function damageEnemy(n){enemy.hp-=n;if(enemy.hp<=0){const gain=enemy.name==='THE PIXEL WARDEN'?50:10;exp+=gain;if(exp>=30){lv++;exp-=30;hp=Math.min(20,hp+4)}if(enemy.name==='THE PIXEL WARDEN'){mode='win';st.textContent='🏆 You cleared the Pixel Quest!';}else{st.textContent=enemy.name+' was defeated! +'+gain+' EXP';mode='victory';}updateHud()}else{st.textContent=enemy.name+' has '+enemy.hp+' HP left.';enemyTurn()}}
-function enemyTurn(){mode='dodge';dodgeT=3.5;shots=[];let n=enemy.name==='THE PIXEL WARDEN'?13:7;for(let i=0;i<n;i++)shots.push({x:rnd(170,550),y:rnd(220,300),vx:rnd(-55,55),vy:rnd(35,85),r:5});st.textContent='Dodge the pixel attacks!';}
+function damageEnemy(n){
+ enemy.hp-=n;
+ if(enemy.hp<=0){
+  const gain=enemy.name==='THE PIXEL WARDEN'?50:10;exp+=gain;
+  if(exp>=30){lv++;exp-=30;hp=Math.min(20,hp+4)}
+  if(enemy.name==='THE PIXEL WARDEN'){mode='win';st.textContent='🏆 You cleared the Pixel Quest!'}
+  else{st.textContent=enemy.name+' was defeated! +'+gain+' EXP';mode='victory'}
+  updateHud();
+ }else{st.textContent=enemy.name+' has '+enemy.hp+' HP left.';enemyTurn()}
+}
+function spawnShot(o){shots.push(o)}
+function enemyTurn(){
+ mode='dodge';dodgeT=3.5;attackT=0;shots=[];
+ const isBoss=enemy.name==='THE PIXEL WARDEN',phase=isBoss?(enemy.hp<=30?3:enemy.hp<=60?2:1):0;
+ if(!isBoss){
+  for(let i=0;i<7;i++)spawnShot({x:rnd(170,550),y:rnd(210,285),vx:rnd(-55,55),vy:rnd(45,90),r:5,type:'square'});
+ }else if(phase===1){
+  for(let i=0;i<12;i++)spawnShot({x:rnd(145,575),y:rnd(205,275),vx:rnd(-35,35),vy:rnd(55,105),r:5,type:'square'});
+  st.textContent='Warden Pattern 1: falling pixels!';
+ }else if(phase===2){
+  for(let i=0;i<8;i++){const side=i%2?560:160;spawnShot({x:side,y:rnd(345,445),vx:i%2?-rnd(70,125):rnd(70,125),vy:rnd(-35,35),r:6,type:'orb'});}
+  for(let i=0;i<5;i++)spawnShot({x:rnd(180,540),y:205,vx:rnd(-35,35),vy:rnd(70,120),r:5,type:'square'});
+  st.textContent='Warden Pattern 2: crossfire!';
+ }else{
+  for(let i=0;i<10;i++){const a=(Math.PI*2*i/10)+rnd(-.12,.12);spawnShot({x:360+Math.cos(a)*18,y:270+Math.sin(a)*18,vx:Math.cos(a)*rnd(75,125),vy:Math.sin(a)*rnd(75,125),r:6,type:'orb'});}
+  for(let i=0;i<6;i++)spawnShot({x:rnd(160,560),y:215,vx:rnd(-80,80),vy:rnd(80,130),r:4,type:'square'});
+  st.textContent='Warden Pattern 3: soul burst!';
+ }
+}
 function act(a){
  if(mode==='victory'){endBattle();return}
  if(mode==='win')return;
@@ -2153,14 +2179,13 @@ function act(a){
 document.querySelectorAll('.soulAct').forEach(b=>b.onclick=()=>act(b.dataset.act));
 document.getElementById('soulBack').onclick=()=>{sec.classList.add('hidden');home.classList.remove('hidden');resetWorld()};
 document.querySelector('[data-open="soulbound"]').onclick=()=>{home.classList.add('hidden');sec.classList.remove('hidden');resetWorld()};
-window.addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(sec.classList.contains('hidden'))return;if(e.key==='Enter'&&mode==='battle')act('fight');});
+window.addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(sec.classList.contains('hidden'))return;if(e.key==='Enter'&&mode==='battle')act('fight')});
 window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 function update(dt){
  if(sec.classList.contains('hidden'))return;
  if(mode==='world'){
-  let dx=(keys.has('d')||keys.has('arrowright'))-(keys.has('a')||keys.has('arrowleft'));
-  let dy=(keys.has('s')||keys.has('arrowdown'))-(keys.has('w')||keys.has('arrowup'));
-  let m=Math.hypot(dx,dy)||1;player.x+=dx/m*120*dt;player.y+=dy/m*120*dt;
+  let dx=(keys.has('d')||keys.has('arrowright'))-(keys.has('a')||keys.has('arrowleft')),dy=(keys.has('s')||keys.has('arrowdown'))-(keys.has('w')||keys.has('arrowup')),m=Math.hypot(dx,dy)||1;
+  player.x+=dx/m*120*dt;player.y+=dy/m*120*dt;
   player.x=Math.max(55,Math.min(665,player.x));player.y=Math.max(105,Math.min(430,player.y));worldT+=dt;
   if(player.x>590&&player.y<160){startBoss();return}
   if(Math.random()<dt*.002){const e=enemies[Math.floor(Math.random()*enemies.length)];startBattle(e)}
@@ -2168,34 +2193,55 @@ function update(dt){
  if(mode==='dodge'){
   dodgeT-=dt;
   if(dodgeT<=0){mode='battle';shots=[];heart={x:360,y:385};st.textContent=enemy.name+' finished attacking. Choose an action!';return}
-  let dx=(keys.has('d')||keys.has('arrowright'))-(keys.has('a')||keys.has('arrowleft'));
-  let dy=(keys.has('s')||keys.has('arrowdown'))-(keys.has('w')||keys.has('arrowup'));
-  let m=Math.hypot(dx,dy)||1;heart.x+=dx/m*190*dt;heart.y+=dy/m*190*dt;heart.x=Math.max(150,Math.min(570,heart.x));heart.y=Math.max(335,Math.min(455,heart.y));
+  let dx=(keys.has('d')||keys.has('arrowright'))-(keys.has('a')||keys.has('arrowleft')),dy=(keys.has('s')||keys.has('arrowdown'))-(keys.has('w')||keys.has('arrowup')),m=Math.hypot(dx,dy)||1;
+  heart.x+=dx/m*190*dt;heart.y+=dy/m*190*dt;heart.x=Math.max(150,Math.min(570,heart.x));heart.y=Math.max(335,Math.min(455,heart.y));
   inv=Math.max(0,inv-dt);
-  for(const s of shots){s.x+=s.vx*dt;s.y+=s.vy*dt;if(inv<=0&&Math.hypot(s.x-heart.x,s.y-heart.y)<12){hp-=enemy.atk;inv=.65;updateHud();if(hp<=0){mode='gameover';st.textContent='💥 Your soul was scattered. Press Back and try again.'}else st.textContent='Ouch! Dodge the rest!'}}}
- if(mode==='victory'){}
+  for(const s of shots){s.x+=s.vx*dt;s.y+=s.vy*dt;if(inv<=0&&Math.hypot(s.x-heart.x,s.y-heart.y)<s.r+6){hp-=enemy.atk;inv=.65;updateHud();if(hp<=0){mode='gameover';st.textContent='💥 Your soul was scattered. Press Back and try again.'}else st.textContent='Ouch! Dodge the rest!'}}
+ }
 }
+function rect(px,py,w,h,c){x.fillStyle=c;x.fillRect(Math.round(px),Math.round(py),w,h)}
+function spriteMite(cx,cy){rect(cx-16,cy-10,32,20,'#166534');rect(cx-12,cy-14,24,22,'#4ade80');rect(cx-7,cy-9,5,5,'#07110a');rect(cx+2,cy-9,5,5,'#07110a');rect(cx-8,cy+5,5,9,'#22c55e');rect(cx+4,cy+5,5,9,'#22c55e');rect(cx-22,cy-4,6,5,'#86efac');rect(cx+16,cy-4,6,5,'#86efac')}
+function spriteClock(cx,cy){rect(cx-17,cy-17,34,34,'#854d0e');rect(cx-14,cy-14,28,28,'#fde047');rect(cx-9,cy-9,18,18,'#fef9c3');rect(cx-2,cy-7,4,9,'#713f12');rect(cx,cy,8,4,'#713f12');rect(cx-4,cy-19,8,4,'#fef08a');rect(cx-4,cy+15,8,4,'#fef08a')}
+function spriteBat(cx,cy){rect(cx-7,cy-9,14,25,'#6d28d9');rect(cx-25,cy-2,18,14,'#a78bfa');rect(cx+7,cy-2,18,14,'#a78bfa');rect(cx-14,cy+4,8,9,'#7c3aed');rect(cx+6,cy+4,8,9,'#7c3aed');rect(cx-4,cy-5,3,4,'#fff');rect(cx+3,cy-5,3,4,'#fff')}
+function spriteRock(cx,cy){rect(cx-18,cy-13,36,27,'#475569');rect(cx-13,cy-18,22,8,'#64748b');rect(cx-11,cy-7,6,6,'#111827');rect(cx+6,cy-7,6,6,'#111827');rect(cx-6,cy+5,12,4,'#1e293b');rect(cx-21,cy+2,6,8,'#94a3b8');rect(cx+15,cy+2,6,8,'#94a3b8')}
+function spriteSlime(cx,cy){rect(cx-18,cy-8,36,20,'#0369a1');rect(cx-13,cy-14,26,7,'#38bdf8');rect(cx-9,cy-4,6,5,'#082f49');rect(cx+4,cy-4,6,5,'#082f49');rect(cx-4,cy+6,9,4,'#075985');rect(cx-13,cy+12,7,5,'#22d3ee');rect(cx+6,cy+12,7,5,'#22d3ee')}
+function spriteWarden(cx,cy){
+ const glow=enemy&&enemy.hp<=30?'#fef08a':'#fb7185';
+ rect(cx-30,cy-28,60,56,'#3b0b20');rect(cx-24,cy-34,48,6,'#7f1d1d');rect(cx-35,cy-18,8,28,'#be123c');rect(cx+27,cy-18,8,28,'#be123c');
+ rect(cx-23,cy-20,46,38,'#9f1239');rect(cx-15,cy-11,10,9,glow);rect(cx+5,cy-11,10,9,glow);rect(cx-10,cy+7,20,5,'#500724');
+ rect(cx-18,cy+18,9,12,'#e11d48');rect(cx+9,cy+18,9,12,'#e11d48');rect(cx-40,cy-3,10,6,'#fb7185');rect(cx+30,cy-3,10,6,'#fb7185');
+}
+function drawHeart(){rect(heart.x-5,heart.y-5,10,10,'#ff334d');rect(heart.x-8,heart.y-2,16,5,'#ff334d');rect(heart.x-5,heart.y-8,5,5,'#ff334d');rect(heart.x+1,heart.y-8,5,5,'#ff334d')}
 function pixelText(t,y,size=20){x.font='bold '+size+'px monospace';x.fillStyle='#fff';x.textAlign='center';x.fillText(t,360,y)}
 function draw(){
  x.clearRect(0,0,720,500);x.fillStyle='#08090c';x.fillRect(0,0,720,500);
  if(mode==='world'){
   x.fillStyle='#161b22';x.fillRect(40,70,640,390);x.strokeStyle='#d1d5db';x.lineWidth=4;x.strokeRect(40,70,640,390);
-  x.fillStyle='#243b2f';for(let i=0;i<20;i++){x.fillRect(65+(i*71)%580,100+(i*43)%330,16,16)}
-  x.fillStyle='#171717';x.fillRect(300,270,120,90);x.strokeStyle='#fff';x.strokeRect(300,270,120,90);
-  x.fillStyle='#f472b6';x.fillRect(player.x-7,player.y-7,14,14);
-  x.fillStyle='#fb7185';x.fillRect(590,95,70,45);pixelText('WARDEN',120,12);
-  pixelText('PIXEL QUEST',35,24);pixelText('Find the Warden →',485,16);
+  for(let i=0;i<20;i++){rect(65+(i*71)%580,100+(i*43)%330,16,16,'#243b2f')}
+  rect(300,270,120,90,'#171717');x.strokeStyle='#fff';x.strokeRect(300,270,120,90);
+  rect(player.x-7,player.y-7,14,14,'#f472b6');rect(590,95,70,45,'#fb7185');pixelText('WARDEN',120,12);pixelText('PIXEL QUEST',35,24);pixelText('Find the Warden →',485,16);
  }else if(mode==='battle'||mode==='dodge'||mode==='victory'){
   pixelText(enemy?enemy.name:'BATTLE',45,24);
-  x.fillStyle=enemy?enemy.color:'#fff';x.fillRect(330,95,60,60);x.fillStyle='#050505';x.fillRect(342,108,10,10);x.fillRect(368,108,10,10);x.fillRect(350,132,22,7);
+  if(enemy){
+   if(enemy.name==='Moss Mite')spriteMite(360,125);
+   else if(enemy.name==='Clockling')spriteClock(360,125);
+   else if(enemy.name==='Gloom Bat')spriteBat(360,125);
+   else if(enemy.name==='Rocko')spriteRock(360,125);
+   else if(enemy.name==='Spark Slime')spriteSlime(360,125);
+   else spriteWarden(360,125);
+  }
   x.strokeStyle='#fff';x.lineWidth=3;x.strokeRect(120,190,480,270);
-  if(mode==='dodge'){x.fillStyle='#ff334d';x.fillRect(heart.x-5,heart.y-5,10,10);for(const s of shots){x.fillStyle='#f8fafc';x.fillRect(s.x-s.r,s.y-s.r,s.r*2,s.r*2)}}
-  else if(mode==='battle'){pixelText('Choose an action.',250,18);pixelText('FIGHT  ACT  ITEM  MERCY',420,16)}
+  if(mode==='dodge'){
+   for(const s of shots){if(s.type==='orb'){x.fillStyle=enemy&&enemy.name==='THE PIXEL WARDEN'?'#fb7185':'#f8fafc';x.beginPath();x.arc(s.x,s.y,s.r,0,Math.PI*2);x.fill()}else rect(s.x-s.r,s.y-s.r,s.r*2,s.r*2,'#f8fafc')}
+   drawHeart();
+   if(enemy&&enemy.name==='THE PIXEL WARDEN'){const phase=enemy.hp<=30?3:enemy.hp<=60?2:1;pixelText('PHASE '+phase,215,14)}
+  }else if(mode==='battle'){pixelText('Choose an action.',250,18);pixelText('FIGHT  ACT  ITEM  MERCY',420,16);if(enemy&&enemy.name==='THE PIXEL WARDEN'){x.fillStyle='#3f3f46';x.fillRect(220,275,280,12);x.fillStyle='#fb7185';x.fillRect(220,275,280*Math.max(0,enemy.hp/enemy.max),12)}}
   else {pixelText('VICTORY!',330,28);pixelText('Press any action to continue.',380,16)}
  }else if(mode==='win'){pixelText('YOU WIN!',210,42);pixelText('The Pixel Quest is complete.',270,20);pixelText('Thanks for playing!',320,18)}
  else {pixelText('GAME OVER',220,38);pixelText('Your adventure ends here.',280,18)}
 }
-function loop(t){const dt=Math.min(.033,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}updateHud();requestAnimationFrame(loop);
+function loop(t){const dt=Math.min(.033,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}
+updateHud();requestAnimationFrame(loop);
 })();
 </script>
 </body>
