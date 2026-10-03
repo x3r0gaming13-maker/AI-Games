@@ -2123,7 +2123,7 @@ const sec=document.getElementById('soulbound'),cv=document.getElementById('soulC
 x.imageSmoothingEnabled=false;
 x.scale(cv.width/720,cv.height/500);
 const hpE=document.getElementById('soulHP'),lvE=document.getElementById('soulLV'),exE=document.getElementById('soulEXP'),enE=document.getElementById('soulEnemy'),st=document.getElementById('soulStatus');
-let keys=new Set(),mode='world',enemy=null,heart={x:360,y:385},player={x:360,y:330},hp=20,lv=1,exp=0,inv=0,shots=[],last=0,worldT=0;
+let keys=new Set(),mode='world',enemy=null,heart={x:360,y:385},player={x:360,y:330},hp=20,lv=1,exp=0,inv=0,shots=[],last=0,worldT=0,dodgeT=0;
 const enemies=[
  {name:'Moss Mite',hp:18,max:18,atk:1,color:'#4ade80',text:'It wiggles politely.'},
  {name:'Clockling',hp:24,max:24,atk:2,color:'#facc15',text:'It ticks nervously.'},
@@ -2139,7 +2139,7 @@ function startBattle(e){enemy={...e};mode='battle';heart={x:360,y:385};shots=[];
 function startBoss(){startBattle(boss);st.textContent='The PIXEL WARDEN challenges you!';}
 function endBattle(){mode='world';enemy=null;shots=[];heart={x:360,y:385};updateHud()}
 function damageEnemy(n){enemy.hp-=n;if(enemy.hp<=0){const gain=enemy.name==='THE PIXEL WARDEN'?50:10;exp+=gain;if(exp>=30){lv++;exp-=30;hp=Math.min(20,hp+4)}if(enemy.name==='THE PIXEL WARDEN'){mode='win';st.textContent='🏆 You cleared the Pixel Quest!';}else{st.textContent=enemy.name+' was defeated! +'+gain+' EXP';mode='victory';}updateHud()}else{st.textContent=enemy.name+' has '+enemy.hp+' HP left.';enemyTurn()}}
-function enemyTurn(){mode='dodge';shots=[];let n=enemy.name==='THE PIXEL WARDEN'?13:7;for(let i=0;i<n;i++)shots.push({x:rnd(170,550),y:rnd(220,300),vx:rnd(-55,55),vy:rnd(35,85),r:5});setTimeout(()=>{if(mode==='dodge')st.textContent='Dodge the pixel attacks!';},50)}
+function enemyTurn(){mode='dodge';dodgeT=3.5;shots=[];let n=enemy.name==='THE PIXEL WARDEN'?13:7;for(let i=0;i<n;i++)shots.push({x:rnd(170,550),y:rnd(220,300),vx:rnd(-55,55),vy:rnd(35,85),r:5});st.textContent='Dodge the pixel attacks!';}
 function act(a){
  if(mode==='victory'){endBattle();return}
  if(mode==='win')return;
@@ -2166,6 +2166,8 @@ function update(dt){
   if(Math.random()<dt*.002){const e=enemies[Math.floor(Math.random()*enemies.length)];startBattle(e)}
  }
  if(mode==='dodge'){
+  dodgeT-=dt;
+  if(dodgeT<=0){mode='battle';shots=[];heart={x:360,y:385};st.textContent=enemy.name+' finished attacking. Choose an action!';return}
   let dx=(keys.has('d')||keys.has('arrowright'))-(keys.has('a')||keys.has('arrowleft'));
   let dy=(keys.has('s')||keys.has('arrowdown'))-(keys.has('w')||keys.has('arrowup'));
   let m=Math.hypot(dx,dy)||1;heart.x+=dx/m*190*dt;heart.y+=dy/m*190*dt;heart.x=Math.max(150,Math.min(570,heart.x));heart.y=Math.max(335,Math.min(455,heart.y));
