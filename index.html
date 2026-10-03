@@ -193,6 +193,34 @@ footer{
       <button data-open="clicker">Play</button>
     </article>
 
+    <article class="game" data-name="Reaction Rush">
+      <div class="icon">⚡</div>
+      <h3>Reaction Rush</h3>
+      <p>Wait for green, then click as fast as you can.</p>
+      <button data-open="reaction">Play</button>
+    </article>
+
+    <article class="game" data-name="Memory Match">
+      <div class="icon">🧠</div>
+      <h3>Memory Match</h3>
+      <p>Flip cards and find every matching pair.</p>
+      <button data-open="memory">Play</button>
+    </article>
+
+    <article class="game" data-name="Meteor Dodge">
+      <div class="icon">☄️</div>
+      <h3>Meteor Dodge</h3>
+      <p>Move left and right and survive the falling meteors.</p>
+      <button data-open="meteor">Play</button>
+    </article>
+
+    <article class="game" data-name="Mini Pong">
+      <div class="icon">🏓</div>
+      <h3>Mini Pong</h3>
+      <p>Use your paddle to beat the computer.</p>
+      <button data-open="pong">Play</button>
+    </article>
+
     <article class="game" data-name="Snake">
       <div class="icon">🐍</div>
       <h3>Snake</h3>
@@ -295,6 +323,42 @@ footer{
     </article>
   </div>
   <div class="help">Your progress is automatically saved in this browser. Keep clicking and upgrade your empire!</div>
+</section>
+
+
+<section id="reaction" class="player hidden">
+  <div class="topline"><h2>⚡ Reaction Rush</h2><button class="miniBack" data-home="reaction">← Back to games</button></div>
+  <div style="text-align:center;padding:18px">
+    <p id="reactionMessage">Click Start, wait for GREEN, then click the big button!</p>
+    <button id="reactionButton" style="width:min(420px,100%);height:180px;border:0;border-radius:18px;background:#6366f1;color:#fff;font-size:28px;font-weight:800;cursor:pointer">START</button>
+    <div class="status" id="reactionScore">Best: --</div>
+  </div>
+</section>
+
+<section id="memory" class="player hidden">
+  <div class="topline"><h2>🧠 Memory Match</h2><button class="miniBack" data-home="memory">← Back to games</button></div>
+  <div class="stats"><span class="pill">Moves: <b id="memoryMoves">0</b></span><span class="pill">Pairs: <b id="memoryPairs">0</b>/8</span></div>
+  <div id="memoryBoard" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:560px;margin:auto"></div>
+  <div class="status" id="memoryStatus">Find all the matching pairs!</div>
+  <button id="memoryRestart" style="margin-top:10px;width:auto">Restart</button>
+</section>
+
+<section id="meteor" class="player hidden">
+  <div class="topline"><h2>☄️ Meteor Dodge</h2><button class="miniBack" data-home="meteor">← Back to games</button></div>
+  <div class="stats"><span class="pill">Score: <b id="meteorScore">0</b></span><span class="pill">Best: <b id="meteorBest">0</b></span></div>
+  <canvas id="meteorCanvas" width="736" height="420" style="background:#090d1a;cursor:default"></canvas>
+  <div class="help"><b>A/D</b> or <b>←/→</b> = move • Dodge the falling meteors!</div>
+  <div class="status" id="meteorStatus">Press Start to begin.</div>
+  <button id="meteorStart" style="margin-top:10px;width:auto">Start</button>
+</section>
+
+<section id="pong" class="player hidden">
+  <div class="topline"><h2>🏓 Mini Pong</h2><button class="miniBack" data-home="pong">← Back to games</button></div>
+  <div class="stats"><span class="pill">You: <b id="pongYou">0</b></span><span class="pill">CPU: <b id="pongCpu">0</b></span></div>
+  <canvas id="pongCanvas" width="736" height="420" style="background:#0b1020;cursor:none"></canvas>
+  <div class="help"><b>W/S</b> or <b>↑/↓</b> = paddle • First to 7 wins.</div>
+  <div class="status" id="pongStatus">Press Start to play.</div>
+  <button id="pongStart" style="margin-top:10px;width:auto">Start</button>
 </section>
 
 </main>
@@ -1485,6 +1549,152 @@ setInterval(()=>{
   }
 },1000);
 updateClicker();
+
+
+/* Extra GameHub mini-games */
+const miniSections=['reaction','memory','meteor','pong'];
+document.querySelectorAll('.miniBack').forEach(btn=>{
+  btn.onclick=()=>{
+    miniSections.forEach(id=>document.getElementById(id).classList.add('hidden'));
+    home.classList.remove('hidden');
+  };
+});
+function openMini(id){
+  home.classList.add('hidden');
+  battle.classList.add('hidden');
+  clicker.classList.add('hidden');
+  miniSections.forEach(x=>document.getElementById(x).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+/* Reaction Rush */
+const reactionButton=document.getElementById('reactionButton');
+const reactionMessage=document.getElementById('reactionMessage');
+const reactionScore=document.getElementById('reactionScore');
+let reactionTimer=null,reactionStart=0,reactionReady=false,reactionBest=Number(localStorage.getItem('reactionBest')||0);
+function reactionReset(){
+  clearTimeout(reactionTimer); reactionReady=false;
+  reactionButton.textContent='START'; reactionButton.style.background='#6366f1';
+  reactionMessage.textContent='Click Start, wait for GREEN, then click the big button!';
+  reactionScore.textContent='Best: '+(reactionBest?reactionBest+' ms':'--');
+}
+reactionButton.onclick=()=>{
+  if(!reactionReady && reactionButton.textContent==='START'){
+    reactionButton.textContent='WAIT...'; reactionButton.style.background='#b91c1c';
+    reactionMessage.textContent='Do NOT click yet!';
+    reactionTimer=setTimeout(()=>{
+      reactionReady=true; reactionStart=performance.now();
+      reactionButton.textContent='CLICK!'; reactionButton.style.background='#16a34a';
+      reactionMessage.textContent='GO GO GO!';
+    },700+Math.random()*2500);
+  }else if(!reactionReady && reactionButton.textContent==='WAIT...'){
+    clearTimeout(reactionTimer); reactionButton.textContent='TOO EARLY!'; reactionMessage.textContent='You clicked before green. Try again!'; reactionButton.style.background='#f59e0b';
+    setTimeout(reactionReset,900);
+  }else if(reactionReady){
+    const ms=Math.round(performance.now()-reactionStart);
+    reactionScore.textContent=ms+' ms • Best: '+(reactionBest?reactionBest+' ms':'--');
+    reactionMessage.textContent=ms<250?'🔥 Lightning fast!':ms<400?'⚡ Nice reaction!':'👍 Good run!';
+    if(!reactionBest||ms<reactionBest){reactionBest=ms;localStorage.setItem('reactionBest',ms);reactionScore.textContent=ms+' ms • NEW BEST!';}
+    reactionReady=false; reactionButton.textContent='PLAY AGAIN'; reactionButton.style.background='#6366f1';
+  }else reactionReset();
+};
+document.querySelector('[data-open="reaction"]').onclick=()=>{openMini('reaction');reactionReset();};
+
+/* Memory Match */
+const memoryBoard=document.getElementById('memoryBoard'), memoryMoves=document.getElementById('memoryMoves'), memoryPairs=document.getElementById('memoryPairs'), memoryStatus=document.getElementById('memoryStatus');
+let memoryDeck=[],memoryOpen=[],memoryBusy=false,memoryMoveCount=0,memoryPairCount=0;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function memoryReset(){
+  memoryDeck=shuffle(['🍎','🍎','🚀','🚀','👾','👾','🐧','🐧','⚽','⚽','🎮','🎮','🌟','🌟','🍕','🍕'].map((v,i)=>({v,i,found:false})));
+  memoryOpen=[];memoryBusy=false;memoryMoveCount=0;memoryPairCount=0;memoryStatus.textContent='Find all the matching pairs!';renderMemory();
+}
+function renderMemory(){
+  memoryBoard.innerHTML='';
+  memoryDeck.forEach(card=>{
+    const b=document.createElement('button'); b.type='button';
+    b.textContent=(card.found||memoryOpen.includes(card.i))?card.v:'?';
+    b.style.cssText='height:90px;border:0;border-radius:12px;background:'+(card.found?'#166534':'#374151')+';color:#fff;font-size:32px;font-weight:800;cursor:pointer';
+    b.onclick=()=>flipMemory(card.i); memoryBoard.appendChild(b);
+  });
+  memoryMoves.textContent=memoryMoveCount;memoryPairs.textContent=memoryPairCount;
+}
+function flipMemory(i){
+  if(memoryBusy||memoryDeck[i].found||memoryOpen.includes(i))return;
+  memoryOpen.push(i);renderMemory();
+  if(memoryOpen.length===2){
+    memoryMoveCount++;
+    const [a,b]=memoryOpen;
+    if(memoryDeck[a].v===memoryDeck[b].v){
+      memoryDeck[a].found=memoryDeck[b].found=true;memoryOpen=[];memoryPairCount++;memoryStatus.textContent='✨ Match!';
+      renderMemory();
+      if(memoryPairCount===8)memoryStatus.textContent='🏆 You found every pair!';
+    }else{
+      memoryBusy=true;setTimeout(()=>{memoryOpen=[];memoryBusy=false;memoryStatus.textContent='Keep going!';renderMemory();},650);
+    }
+  }
+}
+document.querySelector('[data-open="memory"]').onclick=()=>{openMini('memory');memoryReset();};
+document.getElementById('memoryRestart').onclick=memoryReset;
+
+/* Meteor Dodge */
+const meteorCanvas=document.getElementById('meteorCanvas'),mctx=meteorCanvas.getContext('2d');
+const meteorKeys=new Set();let meteorPlayer,meteors,meteorRunning=false,meteorScoreValue=0,meteorLast=0,meteorSpawn=0,meteorAnim=0;
+let meteorBestValue=Number(localStorage.getItem('meteorBest')||0);document.getElementById('meteorBest').textContent=meteorBestValue;
+window.addEventListener('keydown',e=>meteorKeys.add(e.key.toLowerCase()));
+window.addEventListener('keyup',e=>meteorKeys.delete(e.key.toLowerCase()));
+function meteorStartGame(){
+  meteorPlayer={x:meteorCanvas.width/2,y:meteorCanvas.height-42,w:34,h:18};meteors=[];meteorScoreValue=0;meteorSpawn=0;meteorRunning=true;meteorLast=performance.now();
+  document.getElementById('meteorStatus').textContent='SURVIVE!';cancelAnimationFrame(meteorAnim);meteorLoop(meteorLast);
+}
+function meteorLoop(t){
+  if(!meteorRunning)return;
+  const dt=Math.min(.035,(t-meteorLast)/1000);meteorLast=t;meteorSpawn-=dt;
+  const speed=150+Math.min(260,meteorScoreValue*1.8);
+  if(meteorSpawn<=0){meteors.push({x:20+Math.random()*(meteorCanvas.width-40),y:-20,r:10+Math.random()*13,v:speed*(.7+Math.random()*.7)});meteorSpawn=Math.max(.18,.62-meteorScoreValue/180);}
+  if(meteorKeys.has('a')||meteorKeys.has('arrowleft'))meteorPlayer.x-=300*dt;
+  if(meteorKeys.has('d')||meteorKeys.has('arrowright'))meteorPlayer.x+=300*dt;
+  meteorPlayer.x=Math.max(20,Math.min(meteorCanvas.width-20,meteorPlayer.x));
+  meteors.forEach(m=>m.y+=m.v*dt);meteorScoreValue+=dt*10;
+  for(const m of meteors){if(Math.abs(m.x-meteorPlayer.x)<m.r+18&&Math.abs(m.y-meteorPlayer.y)<m.r+13){meteorRunning=false;const sc=Math.floor(meteorScoreValue);if(sc>meteorBestValue){meteorBestValue=sc;localStorage.setItem('meteorBest',sc);document.getElementById('meteorBest').textContent=sc;}document.getElementById('meteorScore').textContent=sc;document.getElementById('meteorStatus').textContent='💥 Meteor hit! Press Start to try again.';return;}}
+  meteors=meteors.filter(m=>m.y<meteorCanvas.height+30);document.getElementById('meteorScore').textContent=Math.floor(meteorScoreValue);
+  mctx.clearRect(0,0,meteorCanvas.width,meteorCanvas.height);mctx.fillStyle='#0b1020';mctx.fillRect(0,0,meteorCanvas.width,meteorCanvas.height);
+  mctx.fillStyle='#fff';for(let i=0;i<35;i++){const x=(i*83)%meteorCanvas.width,y=(i*47+Math.floor(t/80))%meteorCanvas.height;mctx.fillRect(x,y,2,2);}
+  mctx.fillStyle='#4d8cff';mctx.fillRect(meteorPlayer.x-17,meteorPlayer.y-9,34,18);
+  mctx.fillStyle='#ff7b45';meteors.forEach(m=>{mctx.beginPath();mctx.arc(m.x,m.y,m.r,0,Math.PI*2);mctx.fill();});
+  meteorAnim=requestAnimationFrame(meteorLoop);
+}
+document.querySelector('[data-open="meteor"]').onclick=()=>{openMini('meteor');meteorRunning=false;document.getElementById('meteorScore').textContent='0';document.getElementById('meteorStatus').textContent='Press Start to begin.';};
+document.getElementById('meteorStart').onclick=meteorStartGame;
+
+/* Mini Pong */
+const pongCanvas=document.getElementById('pongCanvas'),pctx=pongCanvas.getContext('2d'),pongKeys=new Set();
+let pongState,pongRunning=false,pongLast=0,pongAnim=0;
+function pongReset(){
+  pongState={py:pongCanvas.height/2,cy:pongCanvas.height/2,ballX:pongCanvas.width/2,ballY:pongCanvas.height/2,vx:300*(Math.random()<.5?1:-1),vy:150*(Math.random()-.5),you:0,cpu:0};
+  document.getElementById('pongYou').textContent='0';document.getElementById('pongCpu').textContent='0';
+}
+function pongServe(dir){pongState.ballX=pongCanvas.width/2;pongState.ballY=pongCanvas.height/2;pongState.vx=300*dir;pongState.vy=170*(Math.random()-.5);}
+function pongLoop(t){
+  if(!pongRunning)return;const dt=Math.min(.033,(t-pongLast)/1000);pongLast=t;
+  if(pongKeys.has('w')||pongKeys.has('arrowup'))pongState.py-=330*dt;if(pongKeys.has('s')||pongKeys.has('arrowdown'))pongState.py+=330*dt;
+  pongState.py=Math.max(35,Math.min(pongCanvas.height-35,pongState.py));
+  pongState.cy+=(pongState.ballY-pongState.cy)*Math.min(1,2.7*dt);pongState.cy=Math.max(35,Math.min(pongCanvas.height-35,pongState.cy));
+  pongState.ballX+=pongState.vx*dt;pongState.ballY+=pongState.vy*dt;
+  if(pongState.ballY<8||pongState.ballY>pongCanvas.height-8)pongState.vy*=-1;
+  if(pongState.ballX<35&&Math.abs(pongState.ballY-pongState.py)<55){pongState.ballX=35;pongState.vx=Math.abs(pongState.vx)*1.04;pongState.vy+=(pongState.ballY-pongState.py)*2;}
+  if(pongState.ballX>pongCanvas.width-35&&Math.abs(pongState.ballY-pongState.cy)<55){pongState.ballX=pongCanvas.width-35;pongState.vx=-Math.abs(pongState.vx)*1.04;pongState.vy+=(pongState.ballY-pongState.cy)*2;}
+  if(pongState.ballX<-10){pongState.cpu++;document.getElementById('pongCpu').textContent=pongState.cpu;pongServe(1);}
+  if(pongState.ballX>pongCanvas.width+10){pongState.you++;document.getElementById('pongYou').textContent=pongState.you;pongServe(-1);}
+  if(pongState.you>=7||pongState.cpu>=7){pongRunning=false;document.getElementById('pongStatus').textContent=pongState.you>=7?'🏆 You win! Press Start for a rematch.':'🤖 CPU wins! Press Start for a rematch.';return;}
+  pctx.clearRect(0,0,pongCanvas.width,pongCanvas.height);pctx.fillStyle='#0b1020';pctx.fillRect(0,0,pongCanvas.width,pongCanvas.height);
+  pctx.setLineDash([8,12]);pctx.strokeStyle='#374151';pctx.beginPath();pctx.moveTo(pongCanvas.width/2,0);pctx.lineTo(pongCanvas.width/2,pongCanvas.height);pctx.stroke();pctx.setLineDash([]);
+  pctx.fillStyle='#4d8cff';pctx.fillRect(20,pongState.py-55,12,110);pctx.fillStyle='#d85b5b';pctx.fillRect(pongCanvas.width-32,pongState.cy-55,12,110);pctx.fillStyle='#fff';pctx.beginPath();pctx.arc(pongState.ballX,pongState.ballY,8,0,Math.PI*2);pctx.fill();
+  pongAnim=requestAnimationFrame(pongLoop);
+}
+window.addEventListener('keydown',e=>pongKeys.add(e.key.toLowerCase()));window.addEventListener('keyup',e=>pongKeys.delete(e.key.toLowerCase()));
+document.querySelector('[data-open="pong"]').onclick=()=>{openMini('pong');pongReset();pongRunning=false;document.getElementById('pongStatus').textContent='Press Start to play.';};
+document.getElementById('pongStart').onclick=()=>{pongReset();pongRunning=true;document.getElementById('pongStatus').textContent='First to 7!';pongLast=performance.now();cancelAnimationFrame(pongAnim);pongAnim=requestAnimationFrame(pongLoop);};
+
 
 // Game loop
 
