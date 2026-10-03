@@ -402,26 +402,43 @@ footer{
 
 <section id="editor" class="player hidden">
   <div class="topline"><h2>🛠️ Neon Chart Editor</h2><button id="editorBack" style="width:auto">← Back to games</button></div>
-  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
-    <label>Tempo <input id="edBpm" type="number" min="40" max="240" value="128" style="width:65px"> BPM</label>
-    <span class="pill">Notes: <b id="edCount">0</b></span>
+  <div class="stats">
+    <span class="pill">⏱️ Time: <b id="edTime">0:00.000</b></span>
+    <span class="pill">🎵 BPM: <b id="edBpmLabel">128</b></span>
+    <span class="pill">🎯 Notes: <b id="edCount">0</b></span>
   </div>
   <div style="max-width:900px;margin:auto">
-    <canvas id="editorCanvas" width="800" height="500" style="background:#090d1a;cursor:crosshair"></canvas>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
-      <button id="edImportWav" style="width:auto">🎵 Add Music</button>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <button id="edImportWav" style="width:auto">🎵 Load Music</button>
       <input id="edWavFile" type="file" accept=".wav,.mp3,audio/*" hidden>
       <button id="edPlay" style="width:auto">▶ Play</button>
       <button id="edStop" style="width:auto">■ Stop</button>
-      <button id="edClear" style="width:auto">🗑️ Clear Notes</button>
+      <button id="edBack5" style="width:auto">⏪ -5s</button>
+      <button id="edForward5" style="width:auto">⏩ +5s</button>
+      <button id="edClear" style="width:auto">🗑️ Clear</button>
       <button id="edSave" style="width:auto">💾 Save Chart</button>
       <button id="edLoad" style="width:auto">📂 Load Chart</button>
       <button id="edWav" style="width:auto">🎵 Export WAV</button>
       <input id="edFile" type="file" accept=".json,application/json" hidden>
     </div>
-    <audio id="edAudioPlayer" controls style="width:100%;margin-top:10px;display:none"></audio>
-    <div class="status" id="edStatus">Click a lane to place a note. Click an existing note to remove it.</div>
-    <p style="opacity:.75;font-size:13px">Click a lane to add a note. Click a note to remove it. Add Music to chart along with your own WAV.</p>
+    <audio id="edAudioPlayer" controls style="width:100%;margin:4px 0 12px;display:none"></audio>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
+      <button class="rhythmKey edLane" data-lane="0">←<br><small>A</small></button>
+      <button class="rhythmKey edLane" data-lane="1">↓<br><small>S</small></button>
+      <button class="rhythmKey edLane" data-lane="2">↑<br><small>W</small></button>
+      <button class="rhythmKey edLane" data-lane="3">→<br><small>D</small></button>
+    </div>
+
+    <canvas id="editorCanvas" width="800" height="420" style="background:#090d1a;cursor:default"></canvas>
+
+    <div class="help">
+      <b>How to chart:</b> Load your music → press Play → tap
+      <b>A / S / W / D</b> when you hear a beat.
+      Notes are placed at the exact moment you press the key.
+      Use the lane buttons if you prefer clicking.
+    </div>
+    <div class="status" id="edStatus">Load a song to begin charting.</div>
   </div>
 </section>
 
@@ -1844,70 +1861,142 @@ rhythmButtons.forEach(b=>{b.addEventListener('pointerdown',()=>rhythmJudge(Numbe
 rhythmReset();
 
 
-/* Neon Chart Editor */
-const editor=document.getElementById('editor'),ec=document.getElementById('editorCanvas'),ectx=ec.getContext('2d');
-const edBpm=document.getElementById('edBpm'),edLength={value:'30'},edCount=document.getElementById('edCount'),edStatus=document.getElementById('edStatus');
+/* Neon Chart Editor — live/FNF-style workflow */
+const editor=document.getElementById('editor');
+const ec=document.getElementById('editorCanvas'),ectx=ec.getContext('2d');
+const edBpmLabel=document.getElementById('edBpmLabel'),edCount=document.getElementById('edCount');
+const edTime=document.getElementById('edTime'),edStatus=document.getElementById('edStatus');
 const edAudioPlayer=document.getElementById('edAudioPlayer'),edWavFile=document.getElementById('edWavFile');
-let edNotes=[],edPlaying=false,edStarted=0,edRAF=0,edAudio=null,edTimer=null,edLastTick=-1,edAudioUrl=null,edImportedAudio=false;
-const edLeft=100,edTop=30,edBottom=455,edLaneW=150,edPxPerSec=55;
-function edBeatMs(){return 60000/Math.max(40,Math.min(240,+edBpm.value||128));}
-function edSnap(sec){const step=edBeatMs()/1000/2;return Math.max(0,Math.min(+edLength.value||30,Math.round(sec/step)*step));}
-function edRender(now=performance.now()){
-  ectx.clearRect(0,0,800,500);ectx.fillStyle='#090d1a';ectx.fillRect(0,0,800,500);
-  ectx.textAlign='center';ectx.font='bold 18px system-ui';
-  const labels=['←','↓','↑','→'];
-  for(let i=0;i<4;i++){ectx.fillStyle='rgba(255,255,255,.035)';ectx.fillRect(edLeft+i*edLaneW,edTop,edLaneW,edBottom-edTop);ectx.strokeStyle='rgba(255,255,255,.1)';ectx.strokeRect(edLeft+i*edLaneW,edTop,edLaneW,edBottom-edTop);ectx.fillStyle='#d1d5db';ectx.fillText(labels[i],edLeft+i*edLaneW+edLaneW/2,20);}
-  const len=+edLength.value||30;
-  for(let sec=0;sec<=len;sec+=edBeatMs()/1000){const x=edLeft+(sec*edPxPerSec)%600; if(x>=edLeft&&x<=700){ectx.strokeStyle=sec%((edBeatMs()/1000)*4)<.001?'rgba(129,140,248,.5)':'rgba(255,255,255,.08)';ectx.beginPath();ectx.moveTo(x,edTop);ectx.lineTo(x,edBottom);ectx.stroke();}}
-  const playSec=edPlaying?(now-edStarted)/1000:0;
-  if(edPlaying){ectx.strokeStyle='#fbbf24';ectx.lineWidth=2;ectx.beginPath();ectx.moveTo(edLeft+((playSec*edPxPerSec)%600),edTop);ectx.lineTo(edLeft+((playSec*edPxPerSec)%600),edBottom);ectx.stroke();}
-  for(const n of edNotes){const x=edLeft+(n.time*edPxPerSec)%600;const y=edTop+n.lane*((edBottom-edTop)/4)+12;ectx.fillStyle=['#60a5fa','#34d399','#fbbf24','#f472b6'][n.lane];ectx.fillRect(x-12,y,24,70);ectx.fillStyle='#111827';ectx.font='bold 20px system-ui';ectx.fillText(labels[n.lane],x,y+45);}
-  edCount.textContent=edNotes.length;
-  if(edPlaying)edRAF=requestAnimationFrame(edRender);
+const edLanes=document.querySelectorAll('.edLane');
+let edNotes=[],edPlaying=false,edStartedAt=0,edRAF=0,edAudioUrl=null,edImportedAudio=false,edChartLength=30,edBpm=128;
+
+function edFormatTime(sec){
+  sec=Math.max(0,sec||0);
+  const m=Math.floor(sec/60),ms=Math.floor((sec%1)*1000).toString().padStart(3,'0');
+  return m+':'+Math.floor(sec%60).toString().padStart(2,'0')+'.'+ms;
 }
-function edToggleNote(e){const r=ec.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(x<edLeft||x>700||y<edTop||y>edBottom)return;const lane=Math.max(0,Math.min(3,Math.floor((y-edTop)/((edBottom-edTop)/4))));const time=edSnap(((x-edLeft)/edPxPerSec));const idx=edNotes.findIndex(n=>n.lane===lane&&Math.abs(n.time-time)<0.08);if(idx>=0)edNotes.splice(idx,1);else edNotes.push({time,lane});edNotes.sort((a,b)=>a.time-b.time);edRender();edStatus.textContent=idx>=0?'Note removed.':'Note added at '+time.toFixed(2)+'s.';}
-function edStart(){
-  edStop();
-  edPlaying=true;
-  edLastTick=-1;
-  if(edImportedAudio && edAudioPlayer.src){
-    edAudioPlayer.currentTime=0;
-    edAudioPlayer.play().catch(()=>{});
-    edStarted=performance.now();
-    edStatus.textContent='Previewing chart with imported WAV...';
+function edCurrentTime(){
+  if(!edPlaying)return edAudioPlayer&&Number.isFinite(edAudioPlayer.currentTime)?edAudioPlayer.currentTime:0;
+  return edImportedAudio?edAudioPlayer.currentTime:Math.max(0,(performance.now()-edStartedAt)/1000);
+}
+function edSetTime(sec){
+  sec=Math.max(0,Math.min(edChartLength,sec||0));
+  if(edImportedAudio&&edAudioPlayer.src)edAudioPlayer.currentTime=sec;
+  else if(!edPlaying)edStartedAt=performance.now()-sec*1000;
+  edRender();
+}
+function edAddNote(lane){
+  const t=Math.max(0,Math.min(edChartLength,edCurrentTime()));
+  const nearby=edNotes.findIndex(n=>n.lane===lane&&Math.abs(n.time-t)<0.07);
+  if(nearby>=0){
+    edNotes.splice(nearby,1);
+    edStatus.textContent='Removed note at '+edFormatTime(t)+'.';
   }else{
-    edStarted=performance.now();
-    edAudio=new (window.AudioContext||window.webkitAudioContext)();
-    if(edAudio.state==='suspended')edAudio.resume();
-    edStatus.textContent='Previewing chart with metronome...';
+    edNotes.push({time:+t.toFixed(3),lane});
+    edNotes.sort((a,b)=>a.time-b.time);
+    edStatus.textContent='Note added at '+edFormatTime(t)+'.';
   }
-  edRAF=requestAnimationFrame(edRender);
-  edTimer=setInterval(()=>{const sec=(performance.now()-edStarted)/1000;const beat=Math.floor(sec/(edBeatMs()/1000));if(!edImportedAudio&&edAudio&&beat!==edLastTick){edLastTick=beat;const o=edAudio.createOscillator(),g=edAudio.createGain();o.frequency.value=beat%4===0?880:440;g.gain.setValueAtTime(.045,edAudio.currentTime);g.gain.exponentialRampToValueAtTime(.001,edAudio.currentTime+.05);o.connect(g);g.connect(edAudio.destination);o.start();o.stop(edAudio.currentTime+.06);}if(sec>(+edLength.value||30))edStop();},20);
+  edRender();
+}
+function edRender(){
+  const now=edCurrentTime();
+  edTime.textContent=edFormatTime(now);
+  edCount.textContent=edNotes.length;
+  edBpmLabel.textContent=edBpm;
+  ectx.clearRect(0,0,800,420);
+  ectx.fillStyle='#090d1a';ectx.fillRect(0,0,800,420);
+  const left=70,laneW=165,hitY=330;
+  const colors=['#60a5fa','#34d399','#fbbf24','#f472b6'];
+  const arrows=['←','↓','↑','→'];
+
+  for(let i=0;i<4;i++){
+    ectx.fillStyle='rgba(255,255,255,.035)';
+    ectx.fillRect(left+i*laneW,0,laneW,420);
+    ectx.strokeStyle='rgba(255,255,255,.1)';
+    ectx.strokeRect(left+i*laneW,0,laneW,420);
+    ectx.fillStyle='#d1d5db';ectx.font='bold 24px system-ui';ectx.textAlign='center';
+    ectx.fillText(arrows[i],left+i*laneW+laneW/2,35);
+  }
+
+  ectx.strokeStyle='#818cf8';ectx.lineWidth=3;
+  ectx.beginPath();ectx.moveTo(left,hitY);ectx.lineTo(left+4*laneW,hitY);ectx.stroke();
+
+  const windowSec=4;
+  for(const n of edNotes){
+    const dy=n.time-now;
+    if(Math.abs(dy)>windowSec)continue;
+    const y=hitY-dy*(hitY/windowSec);
+    ectx.fillStyle=colors[n.lane];
+    ectx.beginPath();
+    ectx.roundRect(left+n.lane*laneW+28,y-14,laneW-56,28,8);
+    ectx.fill();
+    ectx.fillStyle='#111827';ectx.font='bold 20px system-ui';
+    ectx.fillText(arrows[n.lane],left+n.lane*laneW+laneW/2,y+7);
+  }
+
+  ectx.fillStyle='#fbbf24';
+  ectx.beginPath();ectx.arc(left+2*laneW,hitY,7,0,Math.PI*2);ectx.fill();
+
+  if(edPlaying)edRAF=requestAnimationFrame(edRender);
 }
 function edStop(){
   edPlaying=false;
-  clearInterval(edTimer);
   cancelAnimationFrame(edRAF);
-  if(edAudioPlayer && !edAudioPlayer.paused){edAudioPlayer.pause();edAudioPlayer.currentTime=0;}
-  if(edAudio){edAudio.close().catch(()=>{});edAudio=null;}
+  if(edImportedAudio&&edAudioPlayer)edAudioPlayer.pause();
   edRender();
 }
-function edDownload(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
-function edSave(){const data={name:'Neon Chart',bpm:+edBpm.value,length:+edLength.value||30,notes:edNotes};edDownload(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'neon-chart.json');edStatus.textContent='Chart JSON exported.';}
-function edLoadFile(file){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);edBpm.value=Math.max(40,Math.min(240,d.bpm||128));edLength.value=Math.max(4,Math.min(300,d.length||30));edNotes=Array.isArray(d.notes)?d.notes.filter(n=>n&&n.lane>=0&&n.lane<4&&n.time>=0).map(n=>({lane:+n.lane,time:+n.time})).sort((a,b)=>a.time-b.time):[];edRender();edStatus.textContent='Chart loaded.';}catch(e){edStatus.textContent='That file is not a valid chart JSON.';}};r.readAsText(file);}
-function edWriteWav(){
-  const sr=44100,len=Math.max(4,Math.min(300,+edLength.value||30)),frames=Math.ceil(len*sr),buf=new ArrayBuffer(44+frames*2),v=new DataView(buf);
-  const ws=(o,str)=>{for(let i=0;i<str.length;i++)v.setUint8(o+i,str.charCodeAt(i));};ws(0,'RIFF');v.setUint32(4,36+frames*2,true);ws(8,'WAVE');ws(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,frames*2,true);
-  const events=[];for(let sec=0;sec<len;sec+=edBeatMs()/1000)events.push({t:sec,f:sec%(edBeatMs()/1000*4)<.001?880:440});for(const n of edNotes)events.push({t:n.time,f:[330,392,494,587][n.lane]});
-  for(let i=0;i<frames;i++){const t=i/sr;let sample=0;for(const e of events){const d=t-e.t;if(d>=0&&d<0.055)sample+=Math.sin(2*Math.PI*e.f*d)*Math.exp(-d*70)*0.18;}sample=Math.max(-1,Math.min(1,sample));v.setInt16(44+i*2,sample*32767,true);}
-  edDownload(new Blob([buf],{type:'audio/wav'}),'neon-chart-click-track.wav');edStatus.textContent='WAV click track exported.';
+function edPlay(){
+  if(!edImportedAudio){
+    edStatus.textContent='Load music first.';
+    return;
+  }
+  if(edAudioPlayer.currentTime>=edChartLength-0.01)edAudioPlayer.currentTime=0;
+  edPlaying=true;
+  edAudioPlayer.play().catch(()=>{edPlaying=false;edStatus.textContent='Press Play on the audio player first if your browser blocked playback.';});
+  edStatus.textContent='Charting! Press A/S/W/D with the beat.';
+  cancelAnimationFrame(edRAF);edRAF=requestAnimationFrame(edRender);
 }
-document.querySelector('[data-open="editor"]').onclick=()=>{openMini('editor');edRender();};
-document.getElementById('editorBack').onclick=()=>{edStop();editor.classList.add('hidden');home.classList.remove('hidden');};
-ec.addEventListener('pointerdown',edToggleNote);document.getElementById('edPlay').onclick=edStart;document.getElementById('edStop').onclick=edStop;
-document.getElementById('edClear').onclick=()=>{edNotes=[];edRender();edStatus.textContent='Chart cleared.'};
-document.getElementById('edSave').onclick=edSave;document.getElementById('edLoad').onclick=()=>document.getElementById('edFile').click();document.getElementById('edFile').onchange=e=>e.target.files[0]&&edLoadFile(e.target.files[0]);document.getElementById('edWav').onclick=edWriteWav;
-document.getElementById('edImportWav').onclick=()=>edWavFile.click();
+function edDownload(blob,name){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function edSave(){
+  const data={name:'Neon Chart',bpm:edBpm,length:edChartLength,notes:edNotes};
+  edDownload(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'neon-chart.json');
+  edStatus.textContent='Chart saved.';
+}
+function edLoadFile(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      edBpm=Math.max(40,Math.min(240,+d.bpm||128));
+      edChartLength=Math.max(4,Math.min(300,+d.length||30));
+      edNotes=Array.isArray(d.notes)?d.notes.filter(n=>n&&n.lane>=0&&n.lane<4&&Number.isFinite(+n.time)&&+n.time>=0&&+n.time<=edChartLength).map(n=>({lane:+n.lane,time:+n.time})).sort((a,b)=>a.time-b.time):[];
+      edRender();edStatus.textContent='Chart loaded.';
+    }catch(err){edStatus.textContent='That file is not a valid chart JSON.';}
+  };
+  r.readAsText(file);
+}
+function edWriteWav(){
+  const sr=44100,len=Math.max(4,Math.min(300,edChartLength)),frames=Math.ceil(len*sr);
+  const buf=new ArrayBuffer(44+frames*2),v=new DataView(buf);
+  const ws=(o,str)=>{for(let i=0;i<str.length;i++)v.setUint8(o+i,str.charCodeAt(i));};
+  ws(0,'RIFF');v.setUint32(4,36+frames*2,true);ws(8,'WAVE');ws(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);
+  v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,frames*2,true);
+  const events=[];
+  const beat=60/edBpm;
+  for(let sec=0;sec<len;sec+=beat)events.push({t:sec,f:Math.abs(Math.round(sec/beat))%4===0?880:440});
+  for(const n of edNotes)events.push({t:n.time,f:[330,392,494,587][n.lane]});
+  for(let i=0;i<frames;i++){
+    const t=i/sr;let sample=0;
+    for(const e of events){const d=t-e.t;if(d>=0&&d<.055)sample+=Math.sin(2*Math.PI*e.f*d)*Math.exp(-d*70)*.18;}
+    sample=Math.max(-1,Math.min(1,sample));v.setInt16(44+i*2,sample*32767,true);
+  }
+  edDownload(new Blob([buf],{type:'audio/wav'}),'neon-chart-click-track.wav');
+  edStatus.textContent='WAV click track exported.';
+}
 async function edGetAudioType(file){
   const bytes=new Uint8Array(await file.slice(0,12).arrayBuffer());
   const s=(a,b)=>String.fromCharCode(...bytes.slice(a,a+b));
@@ -1916,32 +2005,64 @@ async function edGetAudioType(file){
   if(bytes.length>=2&&bytes[0]===255&&(bytes[1]&224)===224)return 'audio/mpeg';
   return file.type||'audio/*';
 }
+document.querySelector('[data-open="editor"]').onclick=()=>{
+  openMini('editor');edRender();
+};
+document.getElementById('editorBack').onclick=()=>{edStop();editor.classList.add('hidden');home.classList.remove('hidden');};
+document.getElementById('edPlay').onclick=edPlay;
+document.getElementById('edStop').onclick=edStop;
+document.getElementById('edBack5').onclick=()=>edSetTime(edCurrentTime()-5);
+document.getElementById('edForward5').onclick=()=>edSetTime(edCurrentTime()+5);
+document.getElementById('edClear').onclick=()=>{edNotes=[];edRender();edStatus.textContent='All notes cleared.';};
+document.getElementById('edSave').onclick=edSave;
+document.getElementById('edLoad').onclick=()=>document.getElementById('edFile').click();
+document.getElementById('edFile').onchange=e=>e.target.files[0]&&edLoadFile(e.target.files[0]);
+document.getElementById('edWav').onclick=edWriteWav;
+document.getElementById('edImportWav').onclick=()=>edWavFile.click();
+edLanes.forEach(b=>b.addEventListener('pointerdown',()=>edAddNote(Number(b.dataset.lane))));
 edWavFile.onchange=async e=>{
-  const file=e.target.files[0];
-  if(!file)return;
+  const file=e.target.files[0];if(!file)return;
   try{
     edStop();
     if(edAudioUrl)URL.revokeObjectURL(edAudioUrl);
     const mime=await edGetAudioType(file);
-    const raw=await file.arrayBuffer();
-    edAudioUrl=URL.createObjectURL(new Blob([raw],{type:mime}));
-    edAudioPlayer.src=edAudioUrl;
-    edAudioPlayer.style.display='block';
-    edImportedAudio=true;
+    edAudioUrl=URL.createObjectURL(new Blob([await file.arrayBuffer()],{type:mime}));
+    edAudioPlayer.src=edAudioUrl;edAudioPlayer.style.display='block';edImportedAudio=true;
     edAudioPlayer.onloadedmetadata=()=>{
-      const duration=edAudioPlayer.duration;
-      if(!Number.isFinite(duration)||duration<=0){edImportedAudio=false;edStatus.textContent='The browser could not determine this audio file length.';return;}
-      edLength.value=Math.round(Math.max(4,Math.min(300,duration))*100)/100;
-      edRender();
-      edStatus.textContent='Imported '+file.name+' as '+(mime==='audio/mpeg'?'MP3':'WAV')+' ('+duration.toFixed(2)+'s).';
+      if(!Number.isFinite(edAudioPlayer.duration)||edAudioPlayer.duration<=0){
+        edImportedAudio=false;edStatus.textContent='The browser could not read that audio file.';return;
+      }
+      edChartLength=Math.max(4,Math.min(300,edAudioPlayer.duration));
+      edAudioPlayer.currentTime=0;edRender();
+      edStatus.textContent='Loaded '+file.name+' — press Play to chart it.';
     };
+    edAudioPlayer.onended=()=>{edPlaying=false;edRender();edStatus.textContent='Song finished. Add or edit notes, then save the chart.';};
     edAudioPlayer.onerror=()=>{edImportedAudio=false;edAudioPlayer.style.display='none';edStatus.textContent='That audio file could not be played by this browser.';};
     edAudioPlayer.load();
-  }catch(err){edImportedAudio=false;edAudioPlayer.style.display='none';edStatus.textContent='Could not import that audio file.';}
+  }catch(err){edImportedAudio=false;edStatus.textContent='Could not import that audio file.';}
   e.target.value='';
 };
-[edBpm,edLength].forEach(x=>x.addEventListener('input',edRender));edRender();
-
+window.addEventListener('keydown',e=>{
+  if(editor.classList.contains('hidden'))return;
+  const map={a:0,s:1,w:2,d:3};
+  const k=e.key.toLowerCase();
+  if(map[k]!==undefined){
+    e.preventDefault();
+    edAddNote(map[k]);
+  }
+});
+ec.addEventListener('pointerdown',e=>{
+  if(!edImportedAudio)return;
+  const r=ec.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  const left=70,laneW=165,hitY=330;
+  if(x<left||x>left+laneW*4)return;
+  const lane=Math.max(0,Math.min(3,Math.floor((x-left)/laneW)));
+  const now=edCurrentTime(),windowSec=4;
+  const approx=now-(hitY-y)*(windowSec/hitY);
+  const idx=edNotes.findIndex(n=>n.lane===lane&&Math.abs(n.time-approx)<.12);
+  if(idx>=0){edNotes.splice(idx,1);edStatus.textContent='Note removed.';edRender();}
+});
+edRender();
 
 // Game loop
 
