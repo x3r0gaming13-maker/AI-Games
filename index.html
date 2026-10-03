@@ -186,6 +186,13 @@ footer{
       <button data-open="battle">Play</button>
     </article>
 
+    <article class="game" data-name="Clicker Simulator">
+      <div class="icon">🖱️</div>
+      <h3>Clicker Simulator</h3>
+      <p>Click, upgrade your power, and build an automatic coin empire.</p>
+      <button data-open="clicker">Play</button>
+    </article>
+
     <article class="game" data-name="Snake">
       <div class="icon">🐍</div>
       <h3>Snake</h3>
@@ -252,6 +259,42 @@ footer{
     Restart
   </button>
 
+</section>
+
+
+<section id="clicker" class="player hidden">
+  <div class="topline">
+    <h2>🖱️ Clicker Simulator</h2>
+    <button id="clickerBack" style="width:auto">← Back to games</button>
+  </div>
+  <div class="stats">
+    <span class="pill">🪙 Coins: <b id="clickerCoins">0</b></span>
+    <span class="pill">👆 Per Click: <b id="clickerPower">1</b></span>
+    <span class="pill">⚙️ Per Second: <b id="clickerAuto">0</b></span>
+    <span class="pill">✨ Total Clicks: <b id="clickerTotal">0</b></span>
+  </div>
+  <div style="display:grid;place-items:center;padding:18px 0">
+    <button id="clickerButton" aria-label="Click for coins" style="width:220px;height:220px;border:0;border-radius:50%;background:#6366f1;color:#fff;font-size:34px;font-weight:800;cursor:pointer;box-shadow:0 12px 0 #4338ca,0 18px 35px rgba(0,0,0,.3);transition:transform .08s,box-shadow .08s">CLICK!</button>
+    <div class="status" id="clickerStatus">Click the button to earn coins!</div>
+  </div>
+  <div class="games" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+    <article class="game">
+      <div class="icon">💪</div><h3>Stronger Clicks</h3>
+      <p>Increase coins earned per click.</p>
+      <button id="clickerUpgradePower">Upgrade • 25 coins</button>
+    </article>
+    <article class="game">
+      <div class="icon">🤖</div><h3>Auto Clicker</h3>
+      <p>Earn coins automatically every second.</p>
+      <button id="clickerUpgradeAuto">Buy • 50 coins</button>
+    </article>
+    <article class="game">
+      <div class="icon">🚀</div><h3>Super Click</h3>
+      <p>Multiply your click power.</p>
+      <button id="clickerUpgradeMultiplier">Buy • 250 coins</button>
+    </article>
+  </div>
+  <div class="help">Your progress is automatically saved in this browser. Keep clicking and upgrade your empire!</div>
 </section>
 
 </main>
@@ -1357,6 +1400,91 @@ document.getElementById(
   'restart'
 ).onclick=reset;
 
+
+
+const clicker=document.getElementById('clicker');
+const clickerButton=document.getElementById('clickerButton');
+const clickerCoinsEl=document.getElementById('clickerCoins');
+const clickerPowerEl=document.getElementById('clickerPower');
+const clickerAutoEl=document.getElementById('clickerAuto');
+const clickerTotalEl=document.getElementById('clickerTotal');
+const clickerStatus=document.getElementById('clickerStatus');
+const powerUpgrade=document.getElementById('clickerUpgradePower');
+const autoUpgrade=document.getElementById('clickerUpgradeAuto');
+const multiplierUpgrade=document.getElementById('clickerUpgradeMultiplier');
+
+let clickerData={coins:0,power:1,auto:0,total:0,powerCost:25,autoCost:50,multiplierCost:250};
+try{
+  const saved=JSON.parse(localStorage.getItem('gamehubClicker'));
+  if(saved) clickerData={...clickerData,...saved};
+}catch(e){}
+
+function saveClicker(){
+  localStorage.setItem('gamehubClicker',JSON.stringify(clickerData));
+}
+function formatCoins(n){
+  if(n>=1000000000)return(n/1000000000).toFixed(1)+'B';
+  if(n>=1000000)return(n/1000000).toFixed(1)+'M';
+  if(n>=1000)return(n/1000).toFixed(1)+'K';
+  return Math.floor(n).toString();
+}
+function updateClicker(){
+  clickerCoinsEl.textContent=formatCoins(clickerData.coins);
+  clickerPowerEl.textContent=clickerData.power;
+  clickerAutoEl.textContent=clickerData.auto;
+  clickerTotalEl.textContent=clickerData.total;
+  powerUpgrade.textContent='Upgrade • '+formatCoins(clickerData.powerCost)+' coins';
+  autoUpgrade.textContent='Buy • '+formatCoins(clickerData.autoCost)+' coins';
+  multiplierUpgrade.textContent='Buy • '+formatCoins(clickerData.multiplierCost)+' coins';
+  powerUpgrade.disabled=clickerData.coins<clickerData.powerCost;
+  autoUpgrade.disabled=clickerData.coins<clickerData.autoCost;
+  multiplierUpgrade.disabled=clickerData.coins<clickerData.multiplierCost;
+}
+document.querySelector('[data-open="clicker"]').onclick=()=>{
+  home.classList.add('hidden'); battle.classList.add('hidden'); clicker.classList.remove('hidden'); updateClicker();
+};
+document.getElementById('clickerBack').onclick=()=>{
+  clicker.classList.add('hidden'); home.classList.remove('hidden');
+};
+clickerButton.onclick=()=>{
+  clickerData.coins+=clickerData.power;
+  clickerData.total++;
+  clickerStatus.textContent='+'+clickerData.power+' coins! Keep going!';
+  clickerButton.style.transform='translateY(8px) scale(.97)';
+  setTimeout(()=>clickerButton.style.transform='',80);
+  saveClicker(); updateClicker();
+};
+powerUpgrade.onclick=()=>{
+  if(clickerData.coins<clickerData.powerCost)return;
+  clickerData.coins-=clickerData.powerCost;
+  clickerData.power++;
+  clickerData.powerCost=Math.ceil(clickerData.powerCost*1.65);
+  clickerStatus.textContent='💪 Click power upgraded!';
+  saveClicker(); updateClicker();
+};
+autoUpgrade.onclick=()=>{
+  if(clickerData.coins<clickerData.autoCost)return;
+  clickerData.coins-=clickerData.autoCost;
+  clickerData.auto++;
+  clickerData.autoCost=Math.ceil(clickerData.autoCost*1.8);
+  clickerStatus.textContent='🤖 Auto clicker activated!';
+  saveClicker(); updateClicker();
+};
+multiplierUpgrade.onclick=()=>{
+  if(clickerData.coins<clickerData.multiplierCost)return;
+  clickerData.coins-=clickerData.multiplierCost;
+  clickerData.power*=2;
+  clickerData.multiplierCost=Math.ceil(clickerData.multiplierCost*2.5);
+  clickerStatus.textContent='🚀 Super Click doubled your power!';
+  saveClicker(); updateClicker();
+};
+setInterval(()=>{
+  if(clickerData.auto>0){
+    clickerData.coins+=clickerData.auto;
+    saveClicker(); updateClicker();
+  }
+},1000);
+updateClicker();
 
 // Game loop
 
