@@ -251,6 +251,13 @@ footer{
       <button data-open="soulbound">Play</button>
     </article>
 
+    <article class="game" data-name="Deltatale">
+      <div class="icon">📜</div>
+      <h3>Deltatale</h3>
+      <p>Explore the strange, classified history of GameHub through the GameHub Archives.</p>
+      <button data-open="deltatale">Play</button>
+    </article>
+
     <article class="game" data-name="Snake">
       <div class="icon">🐍</div>
       <h3>Snake</h3>
@@ -476,6 +483,35 @@ footer{
     <div class="status" id="edStatus">Load a song to begin charting.</div>
   </div>
 </section>
+
+<section id="deltatale" class="player hidden">
+  <div class="topline"><h2>📜 Deltatale</h2><button id="deltataleBack" style="width:auto">← Back to games</button></div>
+  <div style="max-width:1000px;margin:auto">
+    <div style="text-align:center;padding:18px 10px 8px"><div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.65">GameHub AI • Historical Records</div><h1 style="font-size:clamp(38px,7vw,76px);margin:12px 0 5px;font-weight:900;letter-spacing:-.05em">📜 THE GAMEHUB ARCHIVES</h1><p style="color:#9ca3af">Some events have been verified. Others have been heavily disputed. One has been classified.</p></div>
+    <div id="deltataleGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px"></div>
+    <div style="text-align:center;color:#6b7280;padding:25px">© GameHub AI Archives • Please do not ask about Snake.</div>
+  </div>
+  <div id="deltataleModal" style="position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:20px;z-index:20"><div style="max-width:600px;width:100%;background:#19191f;border:1px solid #555;border-radius:20px;padding:28px;box-shadow:0 20px 70px #0008"><button id="deltataleClose" style="float:right;border:0;background:transparent;color:inherit;font-size:25px;cursor:pointer">×</button><div id="deltataleContent"></div></div></div>
+</section>
+
+<script>
+(()=>{
+ const home=document.getElementById('home'),sec=document.getElementById('deltatale'),grid=document.getElementById('deltataleGrid'),modal=document.getElementById('deltataleModal'),content=document.getElementById('deltataleContent');
+ const entries=[
+  ['🧀','The Cheese','Origin: UNKNOWN','Nobody knows where it came from. x3r0 insists it is important.','The Cheese is now considered a recurring GameHub historical artifact.'],
+  ['🩹','The Rubber Band Incident','Classification: MUSICAL','A rubber band was involved. Somehow, this became an advertising campaign.','Official conclusion: it was, in fact, a rubber band.'],
+  ['🐍','The Forbidden Game','Status: DO NOT OPEN','The archive contains exactly one classified game. Its name is Snake.','Please stop asking. Seriously.'],
+  ['🤖','The AI Incident','Details: UNAVAILABLE','Records indicate that the AI was involved in something. The records then disappeared.','The AI has declined to comment.'],
+  ['💻','The First Game','Historical significance: QUESTIONABLE','The first GameHub game launched. Nobody agrees on what the first game actually was.','It probably had bugs.'],
+  ['👤','The x3r0 Files','Access: DENIED','Founder records are heavily redacted. Several pages simply say “trust me.”','Further investigation is discouraged.']
+ ];
+ function openEntry(i){const e=entries[i];if(i===2)content.innerHTML='<div style="font-size:60px;text-align:center">🐍</div><div style="font-size:12px;letter-spacing:.08em;opacity:.55">ARCHIVE ENTRY #003</div><h2>⚠️ ACCESS DENIED</h2><pre style="font-family:monospace;background:#0b0b0d;color:#ddd;padding:18px;border-radius:12px;white-space:pre-wrap">You are not authorized to view this document.\\n\\nReason: Snake.\\n\\nPlease stop trying.\\n\\nSeriously.</pre>';else content.innerHTML='<div style="font-size:60px;text-align:center">'+e[0]+'</div><div style="font-size:12px;letter-spacing:.08em;opacity:.55">ARCHIVE ENTRY #'+String(i+1).padStart(3,'0')+'</div><h2>'+e[1]+'</h2><p>'+e[3]+'</p><hr><p><b>Official record:</b> '+e[4]+'</p>';modal.style.display='flex'}
+ entries.forEach((e,i)=>{const c=document.createElement('article');c.style.cssText='background:#19191f;border:1px solid '+(i===2?'#7d3434':'#30303a')+';border-radius:18px;padding:22px;box-shadow:0 8px 25px #0002;cursor:pointer';c.innerHTML='<div style="font-size:34px">'+e[0]+'</div><div style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;opacity:.55">'+e[2]+'</div><h2 style="margin:10px 0 7px">'+e[1]+'</h2><p style="color:#9ca3af;line-height:1.5">'+e[3]+'</p>';c.onclick=()=>openEntry(i);grid.appendChild(c)});
+ document.querySelector('[data-open="deltatale"]').onclick=()=>{home.classList.add('hidden');sec.classList.remove('hidden')};
+ document.getElementById('deltataleBack').onclick=()=>{sec.classList.add('hidden');home.classList.remove('hidden');modal.style.display='none'};
+ document.getElementById('deltataleClose').onclick=()=>modal.style.display='none';modal.onclick=e=>{if(e.target===modal)modal.style.display='none'};
+})();
+</script>
 
 </main>
 
