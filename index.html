@@ -290,22 +290,21 @@ footer{
 <section id="proxy" class="player hidden">
   <div class="topline"><h2>🌌 Nebula Search</h2><button id="proxyBack" style="width:auto">← Back to games</button></div>
   <div class="proxy-shell nebula-shell">
-    <p class="help">Your own search space. Search topics, explore results, and open supported pages in the viewer.</p>
+    <p class="help">Enter a website address to load it inside Nebula, or search the web and open a result in the viewer.</p>
     <form id="proxyForm" class="proxy-bar">
       <input id="proxyUrl" class="proxy-input" type="search" placeholder="Search the web or enter a URL…" aria-label="Search the web or enter a URL" autocomplete="off" required>
       <button class="proxy-action" type="submit">Search Nebula</button>
       <button class="proxy-action" type="button" id="proxyNewTab">Search whole web ↗</button>
     </form>
     <div class="nebula-tools">
-      <label for="nebulaMode">Search source</label>
-      <select id="nebulaMode" class="proxy-input"><option value="auto">Nebula (web API, if configured)</option><option value="wiki">Wikipedia topics</option></select>
+      <span>Site viewer powered by Nebula's backend</span>
       <button class="proxy-action" type="button" id="nebulaHome">Clear viewer</button>
     </div>
-    <div id="proxyMessage" class="proxy-message" role="status" aria-live="polite">Ready to search. Nebula uses a configured search API when available and can fall back to Wikipedia topic results.</div>
+    <div id="proxyMessage" class="proxy-message" role="status" aria-live="polite">Ready. Enter a full website address to load it inside Nebula. Web search requires the optional search API to be configured.</div>
     <div id="nebulaResults" class="nebula-results" aria-live="polite"></div>
-    <div class="nebula-viewer-title"><strong id="nebulaViewerTitle">Page viewer</strong><span>Some sites block embedded viewing.</span></div>
+    <div class="nebula-viewer-title"><strong id="nebulaViewerTitle">Page viewer</strong><span>Some sites may block proxying or need browser features Nebula cannot emulate.</span></div>
     <iframe id="proxyFrame" class="proxy-viewer" title="Nebula page viewer" sandbox="allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" src="about:blank"></iframe>
-    <p class="proxy-note">Note: Nebula Search is a search interface, not a network proxy. For general web results inside Nebula, deploy the optional <code>api/search.js</code> endpoint with a search API key. On static GitHub Pages, Wikipedia results work without a key; use “Search whole web” for broader web search. Websites can still block iframe viewing.</p>
+    <p class="proxy-note">Nebula now has a server-side HTML viewer at <code>/api/browse</code>. Deploy on Vercel (or another compatible serverless host) for the backend to run; GitHub Pages alone cannot run API routes. The viewer blocks private-network destinations and supports HTML pages only. Complex sites, sign-in pages, streaming, downloads, and sites with anti-proxy protections may not work. General web search still requires configuring <code>BRAVE_SEARCH_API_KEY</code> for <code>/api/search</code>.</p>
   </div>
 </section>
 
@@ -596,7 +595,6 @@ const proxyUrl=document.getElementById('proxyUrl');
 const proxyFrame=document.getElementById('proxyFrame');
 const proxyMessage=document.getElementById('proxyMessage');
 const nebulaResults=document.getElementById('nebulaResults');
-const nebulaMode=document.getElementById('nebulaMode');
 const nebulaViewerTitle=document.getElementById('nebulaViewerTitle');
 function normalizeProxyUrl(value){
   let parsed;
@@ -605,11 +603,11 @@ function normalizeProxyUrl(value){
 }
 function openProxyUrl(value,title){
   const url=normalizeProxyUrl(value);
-  if(!url){proxyMessage.textContent='That result cannot be opened as a website URL.';return false}
+  if(!url){proxyMessage.textContent='Enter a complete website address beginning with http:// or https://.';return false}
   proxyUrl.value=url;
   nebulaViewerTitle.textContent=title||new URL(url).hostname;
-  proxyMessage.textContent='Attempting to open '+new URL(url).hostname+' in the viewer. The site may block embedding.';
-  proxyFrame.src=url;
+  proxyMessage.textContent='Loading '+new URL(url).hostname+' through Nebula’s backend…';
+  proxyFrame.src='/api/browse?url='+encodeURIComponent(url);
   return true;
 }
 function renderNebulaResults(items,sourceLabel){
@@ -627,36 +625,22 @@ function renderNebulaResults(items,sourceLabel){
   });
   proxyMessage.textContent=items.length+' results from '+sourceLabel+'. Select “Open in viewer” to try viewing a page here.';
 }
-async function searchWikipedia(query){
-  const endpoint='https://en.wikipedia.org/w/api.php?action=opensearch&search='+encodeURIComponent(query)+'&limit=8&namespace=0&format=json&origin=*';
-  const response=await fetch(endpoint);
-  if(!response.ok)throw new Error('Wikipedia search request failed.');
-  const data=await response.json();
-  const titles=data[1]||[],descriptions=data[2]||[],urls=data[3]||[];
-  return titles.map((title,i)=>({title,description:descriptions[i]||'Wikipedia article about '+title,url:urls[i]})).filter(x=>x.url);
-}
 async function searchNebula(query){
   const directUrl=normalizeProxyUrl(query);
   if(directUrl){nebulaResults.replaceChildren();openProxyUrl(directUrl);return}
   if(!query.trim())return;
-  nebulaResults.innerHTML='<div class="nebula-empty">Searching…</div>';
-  proxyMessage.textContent='Searching Nebula…';
-  if(nebulaMode.value==='auto'){
-    try{
-      const response=await fetch('/api/search?q='+encodeURIComponent(query),{headers:{Accept:'application/json'}});
-      if(response.ok){
-        const data=await response.json();
-        if(Array.isArray(data.results)&&data.results.length){renderNebulaResults(data.results,'Nebula web search API');return}
-      }
-    }catch(error){}
-  }
+  nebulaResults.innerHTML='<div class="nebula-empty">Searching the web…</div>';
+  proxyMessage.textContent='Searching with Nebula…';
   try{
-    const results=await searchWikipedia(query);
-    renderNebulaResults(results,'Wikipedia topic search');
-    if(nebulaMode.value==='auto'&&results.length)proxyMessage.textContent+=' General web results need the optional /api/search endpoint configured.';
+    const response=await fetch('/api/search?q='+encodeURIComponent(query),{headers:{Accept:'application/json'}});
+    if(!response.ok)throw new Error('Search API is not configured or is unavailable.');
+    const data=await response.json();
+    if(Array.isArray(data.results)&&data.results.length){renderNebulaResults(data.results,'Nebula web search');return}
+    nebulaResults.innerHTML='<div class="nebula-empty">No web results found. Try a different search or enter a full website address.</div>';
+    proxyMessage.textContent='No results found.';
   }catch(error){
-    nebulaResults.innerHTML='<div class="nebula-empty">Search could not connect. Check your internet connection, or use “Search whole web” to search in a new tab.</div>';
-    proxyMessage.textContent='Nebula could not retrieve results.';
+    nebulaResults.innerHTML='<div class="nebula-empty">Web search is not configured yet. Enter a full website address to open it in the viewer, or use “Search whole web” to search in a new tab.</div>';
+    proxyMessage.textContent='Configure BRAVE_SEARCH_API_KEY on the server to enable search results.';
   }
 }
 proxyForm.onsubmit=e=>{e.preventDefault();searchNebula(proxyUrl.value)};
