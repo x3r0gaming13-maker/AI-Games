@@ -161,6 +161,9 @@ footer{
 
 .rhythmKey{min-height:58px;border:1px solid #4b5563;border-radius:10px;background:#1f2937;color:#fff;font-size:24px;font-weight:800;cursor:pointer}.rhythmKey small{font-size:11px;color:#9ca3af}.rhythmKey:active{background:#4f46e5}
 .proxy-shell{max-width:1000px;margin:auto}.proxy-bar{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.proxy-input{flex:1;min-width:220px;padding:13px 15px;border:1px solid #4b5563;border-radius:10px;background:#111827;color:#fff;font-size:15px}.proxy-action{padding:12px 16px;border:0;border-radius:10px;background:#6366f1;color:#fff;font-weight:800;cursor:pointer}.proxy-action:hover{background:#818cf8}.proxy-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}.proxy-link{display:block;text-align:left;padding:16px;background:#111827;border:1px solid #374151;border-radius:12px;color:#fff;text-decoration:none;cursor:pointer}.proxy-link:hover{border-color:#818cf8;background:#1e293b}.proxy-link strong{display:block;margin-bottom:5px}.proxy-link span{font-size:13px;color:#9ca3af}.proxy-viewer{width:100%;height:min(65vh,650px);border:1px solid #374151;border-radius:12px;background:#fff}.proxy-note{color:#9ca3af;font-size:13px;line-height:1.5}.proxy-message{min-height:22px;color:#c4b5fd;font-size:14px;margin:8px 0}
+
+.nebula-shell{max-width:1100px}.nebula-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 18px}.nebula-tools label{color:#cbd5e1;font-size:13px}.nebula-tools select{max-width:290px;min-width:220px}.nebula-results{display:grid;gap:10px;margin:16px 0 24px}.nebula-result{padding:16px;background:#111827;border:1px solid #374151;border-radius:12px}.nebula-result h3{margin:0 0 6px;font-size:18px}.nebula-result a{color:#a5b4fc;text-decoration:none}.nebula-result a:hover{text-decoration:underline}.nebula-result p{margin:8px 0 12px;color:#cbd5e1;line-height:1.5}.nebula-result-actions{display:flex;gap:8px;flex-wrap:wrap}.nebula-result-actions button{border:1px solid #4b5563;background:#273449;color:#fff;border-radius:8px;padding:8px 11px;cursor:pointer}.nebula-result-url{font-size:12px;color:#9ca3af;overflow-wrap:anywhere}.nebula-empty{padding:22px;border:1px dashed #4b5563;border-radius:12px;color:#9ca3af;text-align:center}.nebula-viewer-title{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 8px;color:#cbd5e1}.nebula-viewer-title span{font-size:12px;color:#9ca3af}
+
 </style>
 </head>
 
@@ -285,25 +288,24 @@ footer{
 
 
 <section id="proxy" class="player hidden">
-  <div class="topline"><h2>🌐 GameHub Proxy Hub</h2><button id="proxyBack" style="width:auto">← Back to games</button></div>
-  <div class="proxy-shell">
-    <p class="help">Your little corner of the web. Choose a quick link or enter a website address below.</p>
+  <div class="topline"><h2>🌌 Nebula Search</h2><button id="proxyBack" style="width:auto">← Back to games</button></div>
+  <div class="proxy-shell nebula-shell">
+    <p class="help">Your own search space. Search topics, explore results, and open supported pages in the viewer.</p>
     <form id="proxyForm" class="proxy-bar">
-      <input id="proxyUrl" class="proxy-input" type="url" inputmode="url" placeholder="https://example.com" aria-label="Website URL" autocomplete="url" required>
-      <button class="proxy-action" type="submit">Load Here</button>
-      <button class="proxy-action" type="button" id="proxyNewTab">Open in New Tab ↗</button>
+      <input id="proxyUrl" class="proxy-input" type="search" placeholder="Search the web or enter a URL…" aria-label="Search the web or enter a URL" autocomplete="off" required>
+      <button class="proxy-action" type="submit">Search Nebula</button>
+      <button class="proxy-action" type="button" id="proxyNewTab">Search whole web ↗</button>
     </form>
-    <div id="proxyMessage" class="proxy-message" role="status" aria-live="polite">Ready. Some websites block embedded viewing.</div>
-    <div class="proxy-links" aria-label="Quick links">
-      <a class="proxy-link" href="https://www.wikipedia.org/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://www.wikipedia.org/"><strong>📚 Wikipedia</strong><span>Explore the encyclopedia</span></a>
-      <a class="proxy-link" href="https://scratch.mit.edu/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://scratch.mit.edu/"><strong>🐱 Scratch</strong><span>Make and play creations</span></a>
-      <a class="proxy-link" href="https://itch.io/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://itch.io/"><strong>🕹️ itch.io</strong><span>Indie games and projects</span></a>
-      <a class="proxy-link" href="https://www.coolmathgames.com/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://www.coolmathgames.com/"><strong>🎯 Coolmath Games</strong><span>Browser games and puzzles</span></a>
-      <a class="proxy-link" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://www.youtube.com/"><strong>▶️ YouTube</strong><span>Videos and gaming channels</span></a>
-      <a class="proxy-link" href="https://www.google.com/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://www.google.com/"><strong>🔎 Google</strong><span>Search the web</span></a>
+    <div class="nebula-tools">
+      <label for="nebulaMode">Search source</label>
+      <select id="nebulaMode" class="proxy-input"><option value="auto">Nebula (web API, if configured)</option><option value="wiki">Wikipedia topics</option></select>
+      <button class="proxy-action" type="button" id="nebulaHome">Clear viewer</button>
     </div>
-    <iframe id="proxyFrame" class="proxy-viewer" title="Website viewer" sandbox="allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" src="about:blank"></iframe>
-    <p class="proxy-note">Heads-up: this is a browser-style hub, not a network proxy. Many sites block being displayed inside another page; use <b>Open New Tab</b> when a site does not load. Only open websites you trust.</p>
+    <div id="proxyMessage" class="proxy-message" role="status" aria-live="polite">Ready to search. Nebula uses a configured search API when available and can fall back to Wikipedia topic results.</div>
+    <div id="nebulaResults" class="nebula-results" aria-live="polite"></div>
+    <div class="nebula-viewer-title"><strong id="nebulaViewerTitle">Page viewer</strong><span>Some sites block embedded viewing.</span></div>
+    <iframe id="proxyFrame" class="proxy-viewer" title="Nebula page viewer" sandbox="allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" src="about:blank"></iframe>
+    <p class="proxy-note">Note: Nebula Search is a search interface, not a network proxy. For general web results inside Nebula, deploy the optional <code>api/search.js</code> endpoint with a search API key. On static GitHub Pages, Wikipedia results work without a key; use “Search whole web” for broader web search. Websites can still block iframe viewing.</p>
   </div>
 </section>
 
@@ -593,32 +595,87 @@ const proxyForm=document.getElementById('proxyForm');
 const proxyUrl=document.getElementById('proxyUrl');
 const proxyFrame=document.getElementById('proxyFrame');
 const proxyMessage=document.getElementById('proxyMessage');
+const nebulaResults=document.getElementById('nebulaResults');
+const nebulaMode=document.getElementById('nebulaMode');
+const nebulaViewerTitle=document.getElementById('nebulaViewerTitle');
 function normalizeProxyUrl(value){
   let parsed;
   try{parsed=new URL(value.trim())}catch{return null}
   return parsed.protocol==='http:'||parsed.protocol==='https:'?parsed.href:null;
 }
-function openProxyUrl(value){
+function openProxyUrl(value,title){
   const url=normalizeProxyUrl(value);
-  if(!url){proxyMessage.textContent='Enter a valid http:// or https:// website address.';return false}
+  if(!url){proxyMessage.textContent='That result cannot be opened as a website URL.';return false}
   proxyUrl.value=url;
-  proxyMessage.textContent='Loading '+new URL(url).hostname+' inside the viewer…';
+  nebulaViewerTitle.textContent=title||new URL(url).hostname;
+  proxyMessage.textContent='Attempting to open '+new URL(url).hostname+' in the viewer. The site may block embedding.';
   proxyFrame.src=url;
   return true;
 }
-proxyForm.onsubmit=e=>{e.preventDefault();openProxyUrl(proxyUrl.value)};
-document.getElementById('proxyNewTab').onclick=()=>{const url=normalizeProxyUrl(proxyUrl.value);if(!url){proxyMessage.textContent='Enter a valid http:// or https:// website address.';return}const tab=window.open(url,'_blank','noopener,noreferrer');if(tab)proxyMessage.textContent='Opened '+new URL(url).hostname+' in a separate tab.';else proxyMessage.textContent='Pop-up blocked. The site is still being attempted in the viewer.'};
-document.querySelectorAll('[data-proxy-url]').forEach(link=>link.addEventListener('click',e=>{
-  e.preventDefault();
-  proxyUrl.value=link.dataset.proxyUrl;
-  openProxyUrl(link.dataset.proxyUrl);
-}));
+function renderNebulaResults(items,sourceLabel){
+  nebulaResults.replaceChildren();
+  if(!items.length){nebulaResults.innerHTML='<div class="nebula-empty">No results found. Try a different search.</div>';return}
+  items.forEach(item=>{
+    const card=document.createElement('article');card.className='nebula-result';
+    const heading=document.createElement('h3');const link=document.createElement('a');link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent=item.title||'Untitled result';heading.appendChild(link);
+    const url=document.createElement('div');url.className='nebula-result-url';url.textContent=item.url||'';
+    const desc=document.createElement('p');desc.textContent=item.description||'No summary available.';
+    const actions=document.createElement('div');actions.className='nebula-result-actions';
+    const view=document.createElement('button');view.type='button';view.textContent='Open in viewer';view.onclick=()=>openProxyUrl(item.url,item.title);
+    const tab=document.createElement('button');tab.type='button';tab.textContent='Open new tab ↗';tab.onclick=()=>window.open(item.url,'_blank','noopener,noreferrer');
+    actions.append(view,tab);card.append(heading,url,desc,actions);nebulaResults.appendChild(card);
+  });
+  proxyMessage.textContent=items.length+' results from '+sourceLabel+'. Select “Open in viewer” to try viewing a page here.';
+}
+async function searchWikipedia(query){
+  const endpoint='https://en.wikipedia.org/w/api.php?action=opensearch&search='+encodeURIComponent(query)+'&limit=8&namespace=0&format=json&origin=*';
+  const response=await fetch(endpoint);
+  if(!response.ok)throw new Error('Wikipedia search request failed.');
+  const data=await response.json();
+  const titles=data[1]||[],descriptions=data[2]||[],urls=data[3]||[];
+  return titles.map((title,i)=>({title,description:descriptions[i]||'Wikipedia article about '+title,url:urls[i]})).filter(x=>x.url);
+}
+async function searchNebula(query){
+  const directUrl=normalizeProxyUrl(query);
+  if(directUrl){nebulaResults.replaceChildren();openProxyUrl(directUrl);return}
+  if(!query.trim())return;
+  nebulaResults.innerHTML='<div class="nebula-empty">Searching…</div>';
+  proxyMessage.textContent='Searching Nebula…';
+  if(nebulaMode.value==='auto'){
+    try{
+      const response=await fetch('/api/search?q='+encodeURIComponent(query),{headers:{Accept:'application/json'}});
+      if(response.ok){
+        const data=await response.json();
+        if(Array.isArray(data.results)&&data.results.length){renderNebulaResults(data.results,'Nebula web search API');return}
+      }
+    }catch(error){}
+  }
+  try{
+    const results=await searchWikipedia(query);
+    renderNebulaResults(results,'Wikipedia topic search');
+    if(nebulaMode.value==='auto'&&results.length)proxyMessage.textContent+=' General web results need the optional /api/search endpoint configured.';
+  }catch(error){
+    nebulaResults.innerHTML='<div class="nebula-empty">Search could not connect. Check your internet connection, or use “Search whole web” to search in a new tab.</div>';
+    proxyMessage.textContent='Nebula could not retrieve results.';
+  }
+}
+proxyForm.onsubmit=e=>{e.preventDefault();searchNebula(proxyUrl.value)};
+document.getElementById('proxyNewTab').onclick=()=>{
+  const query=proxyUrl.value.trim();
+  if(!query){proxyMessage.textContent='Enter a search query first.';return}
+  const url=normalizeProxyUrl(query)||('https://duckduckgo.com/?q='+encodeURIComponent(query));
+  const tab=window.open(url,'_blank','noopener,noreferrer');
+  proxyMessage.textContent=tab?'Opened the search in a separate tab.':'Pop-up blocked. Allow pop-ups or try again.';
+};
+document.getElementById('nebulaHome').onclick=()=>{
+  proxyFrame.src='about:blank';nebulaViewerTitle.textContent='Page viewer';
+  proxyMessage.textContent='Viewer cleared. Search for another topic or URL.';
+};
 document.getElementById('proxyBack').onclick=()=>{
   proxyFrame.src='about:blank';
   document.getElementById('proxy').classList.add('hidden');
   home.classList.remove('hidden');
 };
-
 document.getElementById('back').onclick=()=>{
   battle.classList.add('hidden');
   home.classList.remove('hidden');
