@@ -291,7 +291,7 @@ footer{
     <form id="proxyForm" class="proxy-bar">
       <input id="proxyUrl" class="proxy-input" type="url" inputmode="url" placeholder="https://example.com" aria-label="Website URL" autocomplete="url" required>
       <button class="proxy-action" type="submit">Load Here</button>
-      <button class="proxy-action" type="button" id="proxyNewTab">Open New Tab ↗</button>
+      <button class="proxy-action" type="button" id="proxyNewTab">Open in New Tab ↗</button>
     </form>
     <div id="proxyMessage" class="proxy-message" role="status" aria-live="polite">Ready. Some websites block embedded viewing.</div>
     <div class="proxy-links" aria-label="Quick links">
@@ -602,13 +602,12 @@ function openProxyUrl(value){
   const url=normalizeProxyUrl(value);
   if(!url){proxyMessage.textContent='Enter a valid http:// or https:// website address.';return false}
   proxyUrl.value=url;
-  const tab=window.open(url,'_blank');
-  if(tab){tab.opener=null;proxyMessage.textContent='Opened '+new URL(url).hostname+' in a new tab. Many websites block embedded viewing, so opening a tab is the reliable option.'}
-  else{proxyFrame.src=url;proxyMessage.textContent='Your browser blocked the new tab. Allow pop-ups for GameHub, then try again. Some sites also block embedded viewing.'}
+  proxyMessage.textContent='Loading '+new URL(url).hostname+' inside the viewer…';
+  proxyFrame.src=url;
   return true;
 }
 proxyForm.onsubmit=e=>{e.preventDefault();openProxyUrl(proxyUrl.value)};
-document.getElementById('proxyNewTab').onclick=()=>openProxyUrl(proxyUrl.value);
+document.getElementById('proxyNewTab').onclick=()=>{const url=normalizeProxyUrl(proxyUrl.value);if(!url){proxyMessage.textContent='Enter a valid http:// or https:// website address.';return}const tab=window.open(url,'_blank','noopener,noreferrer');if(tab)proxyMessage.textContent='Opened '+new URL(url).hostname+' in a separate tab.';else proxyMessage.textContent='Pop-up blocked. The site is still being attempted in the viewer.'};
 document.querySelectorAll('[data-proxy-url]').forEach(link=>link.addEventListener('click',e=>{
   e.preventDefault();
   proxyUrl.value=link.dataset.proxyUrl;
