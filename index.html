@@ -598,23 +598,21 @@ function normalizeProxyUrl(value){
   try{parsed=new URL(value.trim())}catch{return null}
   return parsed.protocol==='http:'||parsed.protocol==='https:'?parsed.href:null;
 }
-function loadProxyUrl(value){
+function openProxyUrl(value){
   const url=normalizeProxyUrl(value);
   if(!url){proxyMessage.textContent='Enter a valid http:// or https:// website address.';return false}
   proxyUrl.value=url;
-  proxyFrame.src=url;
-  proxyMessage.textContent='Trying to load '+new URL(url).hostname+'. If it stays blank, that site may block embedded viewing.';
+  const tab=window.open(url,'_blank');
+  if(tab){tab.opener=null;proxyMessage.textContent='Opened '+new URL(url).hostname+' in a new tab. Many websites block embedded viewing, so opening a tab is the reliable option.'}
+  else{proxyFrame.src=url;proxyMessage.textContent='Your browser blocked the new tab. Allow pop-ups for GameHub, then try again. Some sites also block embedded viewing.'}
   return true;
 }
-proxyForm.onsubmit=e=>{e.preventDefault();loadProxyUrl(proxyUrl.value)};
-document.getElementById('proxyNewTab').onclick=()=>{
-  const url=normalizeProxyUrl(proxyUrl.value);
-  if(!url){proxyMessage.textContent='Enter a valid http:// or https:// website address first.';return}
-  window.open(url,'_blank','noopener,noreferrer');
-};
+proxyForm.onsubmit=e=>{e.preventDefault();openProxyUrl(proxyUrl.value)};
+document.getElementById('proxyNewTab').onclick=()=>openProxyUrl(proxyUrl.value);
 document.querySelectorAll('[data-proxy-url]').forEach(link=>link.addEventListener('click',e=>{
+  e.preventDefault();
   proxyUrl.value=link.dataset.proxyUrl;
-  proxyMessage.textContent='Quick link selected. It opened in a new tab; press Load Here to try the embedded viewer.';
+  openProxyUrl(link.dataset.proxyUrl);
 }));
 document.getElementById('proxyBack').onclick=()=>{
   proxyFrame.src='about:blank';
