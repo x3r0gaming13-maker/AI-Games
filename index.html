@@ -160,6 +160,7 @@ footer{
 }
 
 .rhythmKey{min-height:58px;border:1px solid #4b5563;border-radius:10px;background:#1f2937;color:#fff;font-size:24px;font-weight:800;cursor:pointer}.rhythmKey small{font-size:11px;color:#9ca3af}.rhythmKey:active{background:#4f46e5}
+.proxy-shell{max-width:1000px;margin:auto}.proxy-bar{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.proxy-input{flex:1;min-width:220px;padding:13px 15px;border:1px solid #4b5563;border-radius:10px;background:#111827;color:#fff;font-size:15px}.proxy-action{padding:12px 16px;border:0;border-radius:10px;background:#6366f1;color:#fff;font-weight:800;cursor:pointer}.proxy-action:hover{background:#818cf8}.proxy-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}.proxy-link{display:block;text-align:left;padding:16px;background:#111827;border:1px solid #374151;border-radius:12px;color:#fff;text-decoration:none;cursor:pointer}.proxy-link:hover{border-color:#818cf8;background:#1e293b}.proxy-link strong{display:block;margin-bottom:5px}.proxy-link span{font-size:13px;color:#9ca3af}.proxy-viewer{width:100%;height:min(65vh,650px);border:1px solid #374151;border-radius:12px;background:#fff}.proxy-note{color:#9ca3af;font-size:13px;line-height:1.5}.proxy-message{min-height:22px;color:#c4b5fd;font-size:14px;margin:8px 0}
 </style>
 </head>
 
@@ -258,6 +259,13 @@ footer{
       <button data-open="deltatale">Play</button>
     </article>
 
+    <article class="game" data-name="Proxy Hub">
+      <div class="icon">🌐</div>
+      <h3>Proxy Hub</h3>
+      <p>A browser-style launchpad with quick links and an embedded viewer for sites that allow it.</p>
+      <button data-open="proxy">Open Hub</button>
+    </article>
+
     <article class="game" data-name="Snake">
       <div class="icon">🐍</div>
       <h3>Snake</h3>
@@ -275,6 +283,29 @@ footer{
   </section>
 </section>
 
+
+<section id="proxy" class="player hidden">
+  <div class="topline"><h2>🌐 GameHub Proxy Hub</h2><button id="proxyBack" style="width:auto">← Back to games</button></div>
+  <div class="proxy-shell">
+    <p class="help">Your little corner of the web. Choose a quick link or enter a website address below.</p>
+    <form id="proxyForm" class="proxy-bar">
+      <input id="proxyUrl" class="proxy-input" type="url" inputmode="url" placeholder="https://example.com" aria-label="Website URL" autocomplete="url" required>
+      <button class="proxy-action" type="submit">Load Here</button>
+      <button class="proxy-action" type="button" id="proxyNewTab">Open New Tab ↗</button>
+    </form>
+    <div id="proxyMessage" class="proxy-message" role="status" aria-live="polite">Ready. Some websites block embedded viewing.</div>
+    <div class="proxy-links" aria-label="Quick links">
+      <a class="proxy-link" href="https://www.wikipedia.org/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://www.wikipedia.org/"><strong>📚 Wikipedia</strong><span>Explore the encyclopedia</span></a>
+      <a class="proxy-link" href="https://scratch.mit.edu/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://scratch.mit.edu/"><strong>🐱 Scratch</strong><span>Make and play creations</span></a>
+      <a class="proxy-link" href="https://itch.io/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://itch.io/"><strong>🕹️ itch.io</strong><span>Indie games and projects</span></a>
+      <a class="proxy-link" href="https://www.coolmathgames.com/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://www.coolmathgames.com/"><strong>🎯 Coolmath Games</strong><span>Browser games and puzzles</span></a>
+      <a class="proxy-link" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://www.youtube.com/"><strong>▶️ YouTube</strong><span>Videos and gaming channels</span></a>
+      <a class="proxy-link" href="https://www.google.com/" target="_blank" rel="noopener noreferrer" data-proxy-url="https://www.google.com/"><strong>🔎 Google</strong><span>Search the web</span></a>
+    </div>
+    <iframe id="proxyFrame" class="proxy-viewer" title="Website viewer" sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" src="about:blank"></iframe>
+    <p class="proxy-note">Heads-up: this is a browser-style hub, not a network proxy. Many sites block being displayed inside another page; use <b>Open New Tab</b> when a site does not load. Only open websites you trust.</p>
+  </div>
+</section>
 
 <section id="battle" class="player hidden">
 
@@ -552,6 +583,43 @@ document.querySelector('[data-open="battle"]').onclick=()=>{
   home.classList.add('hidden');
   battle.classList.remove('hidden');
   reset();
+};
+
+document.querySelector('[data-open="proxy"]').onclick=()=>{
+  home.classList.add('hidden');
+  document.getElementById('proxy').classList.remove('hidden');
+};
+const proxyForm=document.getElementById('proxyForm');
+const proxyUrl=document.getElementById('proxyUrl');
+const proxyFrame=document.getElementById('proxyFrame');
+const proxyMessage=document.getElementById('proxyMessage');
+function normalizeProxyUrl(value){
+  let parsed;
+  try{parsed=new URL(value.trim())}catch{return null}
+  return parsed.protocol==='http:'||parsed.protocol==='https:'?parsed.href:null;
+}
+function loadProxyUrl(value){
+  const url=normalizeProxyUrl(value);
+  if(!url){proxyMessage.textContent='Enter a valid http:// or https:// website address.';return false}
+  proxyUrl.value=url;
+  proxyFrame.src=url;
+  proxyMessage.textContent='Trying to load '+new URL(url).hostname+'. If it stays blank, that site may block embedded viewing.';
+  return true;
+}
+proxyForm.onsubmit=e=>{e.preventDefault();loadProxyUrl(proxyUrl.value)};
+document.getElementById('proxyNewTab').onclick=()=>{
+  const url=normalizeProxyUrl(proxyUrl.value);
+  if(!url){proxyMessage.textContent='Enter a valid http:// or https:// website address first.';return}
+  window.open(url,'_blank','noopener,noreferrer');
+};
+document.querySelectorAll('[data-proxy-url]').forEach(link=>link.addEventListener('click',e=>{
+  proxyUrl.value=link.dataset.proxyUrl;
+  proxyMessage.textContent='Quick link selected. It opened in a new tab; press Load Here to try the embedded viewer.';
+}));
+document.getElementById('proxyBack').onclick=()=>{
+  proxyFrame.src='about:blank';
+  document.getElementById('proxy').classList.add('hidden');
+  home.classList.remove('hidden');
 };
 
 document.getElementById('back').onclick=()=>{
