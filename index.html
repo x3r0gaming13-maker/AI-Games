@@ -269,6 +269,13 @@ footer{
       <button data-open="proxy">Open Hub</button>
     </article>
 
+    <article class="game" data-name="HULKTALE">
+      <div class="icon">💚</div>
+      <h3>HULKTALE</h3>
+      <p>An Undertale parody starring the Hulk. Meet Flowey, Toriel, Sans, and Papyrus in this pixel-art adventure.</p>
+      <button data-open="hulktale">Play</button>
+    </article>
+
     <article class="game" data-name="Snake">
       <div class="icon">🐍</div>
       <h3>Snake</h3>
@@ -286,6 +293,13 @@ footer{
   </section>
 </section>
 
+
+
+<section id="hulktale" class="player hidden">
+  <div class="topline"><h2>💚 HULKTALE</h2><button class="miniBack" data-home="hulktale">← Back to games</button></div>
+  <p class="help">An unofficial fan parody. Use the game controls shown on the title screen.</p>
+  <iframe src="hulktale.html" title="HULKTALE game" style="display:block;width:100%;height:min(80vh,760px);border:1px solid #374151;border-radius:10px;background:#000" allow="autoplay"></iframe>
+</section>
 
 <section id="proxy" class="player hidden">
   <div class="topline"><h2>🌌 Nebula Search</h2><button id="proxyBack" style="width:auto">← Back to games</button></div>
@@ -2498,5 +2512,23 @@ addEventListener('keydown',e=>{if(!sec.classList.contains('hidden')){keys.add(e.
 c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();mouse.x=(e.clientX-r.left)*W/r.width;mouse.y=(e.clientY-r.top)*H/r.height});c.addEventListener('mousedown',()=>shoot=true);addEventListener('mouseup',()=>shoot=false);
 resetWorld();requestAnimationFrame(loop)})();
 </script>
+
+<script>
+(()=> {
+  const home = document.getElementById('home');
+  document.querySelectorAll('[data-open="hulktale"]').forEach(b => b.addEventListener('click', () => {
+    home.classList.add('hidden');
+    document.querySelectorAll('main > .player').forEach(s => s.classList.add('hidden'));
+    document.getElementById('hulktale').classList.remove('hidden');
+    window.scrollTo(0,0);
+  }));
+  document.querySelectorAll('[data-home="hulktale"]').forEach(b => b.addEventListener('click', () => {
+    document.getElementById('hulktale').classList.add('hidden');
+    home.classList.remove('hidden');
+    window.scrollTo(0,0);
+  }));
+})();
+</script>
+
 </body>
 </html>
